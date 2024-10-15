@@ -3,7 +3,13 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags: []
+  tags:
+  - GreenChip
+  - BlueChip
+  - YellowChip
+  - RedChip
+  - PurpleChip
+  - WhiteChip
   layers:
   - Default
   - TransparentFX

@@ -20,6 +20,9 @@ TextureImporter:
   - first:
       213: -8308055963151357098
     second: Chips_5
+  - first:
+      213: 7533027000976255218
+    second: Chips_6
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -63,10 +66,10 @@ TextureImporter:
   compressionQuality: 50
   spriteMode: 2
   spriteExtrude: 1
-  spriteMeshType: 0
+  spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 100
+  spritePixelsToUnits: 1
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -131,10 +134,10 @@ TextureImporter:
       name: Chips_0
       rect:
         serializedVersion: 2
-        x: 10
-        y: 438
-        width: 64
-        height: 66
+        x: 7
+        y: 375
+        width: 130
+        height: 130
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -152,10 +155,10 @@ TextureImporter:
       name: Chips_1
       rect:
         serializedVersion: 2
-        x: 80
-        y: 438
-        width: 64
-        height: 64
+        x: 147
+        y: 375
+        width: 130
+        height: 130
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -173,10 +176,10 @@ TextureImporter:
       name: Chips_2
       rect:
         serializedVersion: 2
-        x: 150
-        y: 438
-        width: 64
-        height: 64
+        x: 287
+        y: 375
+        width: 130
+        height: 130
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -194,10 +197,10 @@ TextureImporter:
       name: Chips_3
       rect:
         serializedVersion: 2
-        x: 10
-        y: 366
-        width: 64
-        height: 66
+        x: 7
+        y: 235
+        width: 130
+        height: 130
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -215,10 +218,10 @@ TextureImporter:
       name: Chips_4
       rect:
         serializedVersion: 2
-        x: 80
-        y: 366
-        width: 64
-        height: 66
+        x: 147
+        y: 235
+        width: 130
+        height: 130
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -236,10 +239,10 @@ TextureImporter:
       name: Chips_5
       rect:
         serializedVersion: 2
-        x: 150
-        y: 368
-        width: 64
-        height: 64
+        x: 287
+        y: 235
+        width: 130
+        height: 130
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -257,19 +260,19 @@ TextureImporter:
       name: Chips_6
       rect:
         serializedVersion: 2
-        x: 6
-        y: 284
-        width: 72
-        height: 72
+        x: 1
+        y: 89
+        width: 142
+        height: 142
       alignment: 0
       pivot: {x: 0, y: 0}
-      border: {x: 14, y: 15, z: 14, w: 13}
+      border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
-      tessellationDetail: 0
+      tessellationDetail: -1
       bones: []
-      spriteID: 642703044c01b5f47bb7ea3d0b2c55b7
-      internalID: 1405376193
+      spriteID: 2f8ad9c4520ba8860800000000000000
+      internalID: 7533027000976255218
       vertices: []
       indices: 
       edges: []
@@ -277,7 +280,7 @@ TextureImporter:
     outline: []
     physicsShape: []
     bones: []
-    spriteID: 3f6616d0359d42340907fec69e130aad
+    spriteID: 
     internalID: 0
     vertices: []
     indices: 
@@ -291,10 +294,7 @@ TextureImporter:
       Chips_3: -7210935366649098577
       Chips_4: -9076418124995611519
       Chips_5: -8308055963151357098
-      Chips_6: 1405376193
-      Chips_7: -1170204998
-      Chips_8: 1253647247
-      Chips_9: -1364858566
+      Chips_6: 7533027000976255218
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
