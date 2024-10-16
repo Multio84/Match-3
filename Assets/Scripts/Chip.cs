@@ -61,6 +61,9 @@ public class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDrag
 
         // Определяем, в каком направлении прошло большее смещение
         if (Mathf.Abs(dragDelta.x) > Mathf.Abs(dragDelta.y)) {
+
+            Debug.Log($"DragDelta = {dragDelta}");
+
             if (dragDelta.x > minDragThreshold) {
                 // Движение вправо
                 Move(Vector3.right);
@@ -87,11 +90,13 @@ public class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDrag
         if (isMoving) return;  // Избежим одновременных перемещений
 
         // Находим соседнюю фишку
-        Vector3Int targetCell = gameField.GetCellPosition(transform.position + direction);
-        Chip otherChip = gameField.GetChipInCell(targetCell);
+        Vector2Int targetCell = gameField.GetCellPosition(transform.position + direction);
+        if (!gameField.IsCellInGrid(targetCell)) return;
+
+        Chip otherChip = gameField.GetChip(targetCell);
 
         if (otherChip != null) {
-            // Запускаем корутины для перемещения двух фишек
+            // Запускаем корутину для перемещения двух фишек
             StartCoroutine(SwapChips(otherChip, direction));
         }
     }

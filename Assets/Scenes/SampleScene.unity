@@ -160,6 +160,9 @@ MonoBehaviour:
   - {fileID: 4550339644053309163, guid: 0c0ff3632baae8148b75e840b2d893e8, type: 3}
   - {fileID: 6528617245901053662, guid: 9b9a47101da6bd8458435b1233f2a621, type: 3}
   - {fileID: 4625192822599467950, guid: 6b05d5949c48d3c40b9cd38b68fce623, type: 3}
+  cellSize: 0
+  minChipDragThreshold: 0
+  chipMoveAnimDuration: 0.33
 --- !u!4 &442388761
 Transform:
   m_ObjectHideFlags: 0
@@ -431,7 +434,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b0e6703cbf16fc0468d871e936e75e93, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  minChipDragThreshold: 0.5
+  gameField: {fileID: 442388760}
 --- !u!4 &1484995266
 Transform:
   m_ObjectHideFlags: 0
@@ -519,7 +522,7 @@ Transform:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
+  - {fileID: 519420032}
   - {fileID: 799705122}
   - {fileID: 1984465178}
   - {fileID: 1484995266}
-  - {fileID: 519420032}

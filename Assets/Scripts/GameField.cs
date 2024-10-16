@@ -143,17 +143,30 @@ public class GameField : MonoBehaviour
         }
     }
 
-    public Vector3Int GetCellPosition(Vector3 worldPos)
+    public Vector2Int GetCellPosition(Vector3 worldPos)
     {
-        return grid.WorldToCell(worldPos);
+        Vector2Int cellPos = new Vector2Int(
+            grid.WorldToCell(worldPos).x,
+            grid.WorldToCell(worldPos).y
+        );
+        return cellPos;
     }
 
-    public Chip GetChipInCell(Vector3Int cellPos)
+    public bool IsCellInGrid(Vector2Int cellPos)
+    {
+        if (cellPos.x < 0 || cellPos.x > width - 1 || cellPos.y < 0 || cellPos.y > height - 1) { 
+            return false;
+        }
+
+        return true;
+    }
+
+    public Chip GetChip(Vector2Int cellPos)
     {
         return chips[cellPos.x, cellPos.y];
     }
 
-    public void AddChip(Vector3Int cellPos, Chip chip)
+    public void AddChip(Vector2Int cellPos, Chip chip)
     {
         if (chips[cellPos.x, cellPos.y] != null) {
             chips[cellPos.x, cellPos.y] = chip;
