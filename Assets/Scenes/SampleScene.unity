@@ -151,7 +151,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   grid: {fileID: 442388762}
   width: 7
-  height: 7
+  height: 14
   cellPrefab: {fileID: 8740310698612739118, guid: d32dc4beec913a5408a85ad3109d8d04, type: 3}
   chipsPrefabs:
   - {fileID: 7475379139286756731, guid: d8dfb077522af344584ea118d011d030, type: 3}
@@ -161,8 +161,9 @@ MonoBehaviour:
   - {fileID: 6528617245901053662, guid: 9b9a47101da6bd8458435b1233f2a621, type: 3}
   - {fileID: 4625192822599467950, guid: 6b05d5949c48d3c40b9cd38b68fce623, type: 3}
   cellSize: 0
-  minChipDragThreshold: 0
-  chipMoveAnimDuration: 0.33
+  chipDragThreshold: 1
+  chipSwapDuration: 0.2
+  chipDeathDuration: 0.2
 --- !u!4 &442388761
 Transform:
   m_ObjectHideFlags: 0

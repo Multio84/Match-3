@@ -16,120 +16,150 @@ public enum ChipColor
 
 public class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDragHandler
 {
+    Camera renderCamera;
+
     public ChipColor color;
     private GameField gameField;
 
-    private float minDragThreshold;
-    private float moveDuration;
+    private float dragThreshold;  // min sidtance for a chip to move, after which the chip starts swap with it's neighbour
+    private float swapDuration;
+    private float deathDuration;
     private Vector3 initialPosition;
-    private Vector3 startDragPosition;
+    private Vector3 startDragPos;
     private bool isDragging = false;
     private bool isMoving = false;
+    public bool isInAction = false; // if the chip is in action, it can't be deleted by 3 in row match
+    public bool isDead = false;
 
-
-    private void Start()
+    void Start()
     {
         gameField = GameMode.Instance.gameField;
+        renderCamera = Camera.main;
 
-        minDragThreshold = gameField.minChipDragThreshold;
-        moveDuration = gameField.chipMoveAnimDuration;
+        swapDuration = gameField.chipSwapDuration;
+        dragThreshold = gameField.chipDragThreshold;
+        deathDuration = gameField.chipDeathDuration;
     }
 
     public void OnPointerDown(PointerEventData eventData)
     {
+        if (isMoving) return;
+        isInAction = true;
         // Запоминаем начальную позицию при нажатии
         initialPosition = transform.position;
-        startDragPosition = eventData.position;
+        startDragPos = ScreenToWorldPos(eventData.position);
         isDragging = true;
-        Debug.Log("Pointer DOWN on " + this.color);
+        //Debug.Log("Pointer DOWN on " + color);
     }
 
     public void OnPointerUp(PointerEventData eventData)
     {
         isDragging = false;
-        Debug.Log("Pointer UP on " + this.color);
+
+        //Debug.Log("Pointer UP on " + color);
+    }
+
+    Vector3 ScreenToWorldPos(Vector3 screenPosition)
+    {
+        // Преобразуем экранные координаты в мировые
+        return renderCamera.ScreenToWorldPoint(screenPosition);
     }
 
     public void OnDrag(PointerEventData eventData)
     {
         if (!isDragging) return;
-        Debug.Log("Pointer DRAG on " + this.color);
 
-        // Рассчитываем смещение курсора (или пальца)
-        Vector3 currentDragPosition = eventData.position;
-        Vector3 dragDelta = currentDragPosition - startDragPosition;
+        Vector3 currentDragPosition = ScreenToWorldPos(eventData.position);
+        Vector3 dragDelta = currentDragPosition - startDragPos;
 
-        // Определяем, в каком направлении прошло большее смещение
-        if (Mathf.Abs(dragDelta.x) > Mathf.Abs(dragDelta.y)) {
+        //Debug.Log("DragDelta = " + dragDelta.x + ", " + dragDelta.y + "; dragThreshold = " + dragThreshold);
 
-            Debug.Log($"DragDelta = {dragDelta}");
-
-            if (dragDelta.x > minDragThreshold) {
-                // Движение вправо
-                Move(Vector3.right);
+        if (Mathf.Abs(dragDelta.x) > dragThreshold || Mathf.Abs(dragDelta.y) > dragThreshold) {
+            if (Mathf.Abs(dragDelta.x) > Mathf.Abs(dragDelta.y)) {
+                if (dragDelta.x > dragThreshold) {
+                    Move(Vector2Int.right);
+                }
+                else if (dragDelta.x < -dragThreshold) {
+                    Move(Vector2Int.left);
+                }
             }
-            else if (dragDelta.x < -minDragThreshold) {
-                // Движение влево
-                Move(Vector3.left);
-            }
-        }
-        else {
-            if (dragDelta.y > minDragThreshold) {
-                // Движение вверх
-                Move(Vector3.up);
-            }
-            else if (dragDelta.y < -minDragThreshold) {
-                // Движение вниз
-                Move(Vector3.down);
+            else {
+                if (dragDelta.y > dragThreshold) {
+                    Move(Vector2Int.up);
+                }
+                else if (dragDelta.y < -dragThreshold) {
+                    Move(Vector2Int.down);
+                }
             }
         }
     }
 
-    private void Move(Vector3 direction)
+    void Move(Vector2Int direction)
     {
         if (isMoving) return;  // Избежим одновременных перемещений
 
         // Находим соседнюю фишку
-        Vector2Int targetCell = gameField.GetCellPosition(transform.position + direction);
+        Vector2Int targetCell = gameField.GetCellPosition(transform.position) + direction;
         if (!gameField.IsCellInGrid(targetCell)) return;
 
         Chip otherChip = gameField.GetChip(targetCell);
 
         if (otherChip != null) {
             // Запускаем корутину для перемещения двух фишек
-            StartCoroutine(SwapChips(otherChip, direction));
+            StartCoroutine(SwapChips(otherChip));
         }
     }
 
-    private IEnumerator SwapChips(Chip otherChip, Vector3 direction)
+    public void AnimateDeath()
+    {
+        StartCoroutine(Death());
+    }
+
+    private IEnumerator Death()
+    {
+        Vector3 startScale = transform.localScale;
+        float elapsedTime = 0;
+
+        while (elapsedTime < deathDuration)
+        {
+            transform.localScale = Vector3.Lerp(startScale, Vector3.zero, elapsedTime / deathDuration);
+
+            elapsedTime += Time.deltaTime;
+            yield return null;
+        }
+
+        isDead = true;
+    }
+
+    IEnumerator SwapChips(Chip otherChip)
     {
         isMoving = true;
 
-        // Начальные позиции
+        // set positions
         Vector3 startPos = transform.position;
         Vector3 otherStartPos = otherChip.transform.position;
 
-        // Целевые позиции
         Vector3 targetPos = otherStartPos;
         Vector3 otherTargetPos = startPos;
 
         float elapsedTime = 0;
 
-        // Плавное перемещение двух фишек за moveDuration времени
-        while (elapsedTime < moveDuration) {
-            transform.position = Vector3.Lerp(startPos, targetPos, elapsedTime / moveDuration);
-            otherChip.transform.position = Vector3.Lerp(otherStartPos, otherTargetPos, elapsedTime / moveDuration);
+        // animate chips swap
+        while (elapsedTime < swapDuration) {
+            transform.position = Vector3.Lerp(startPos, targetPos, elapsedTime / swapDuration);
+            otherChip.transform.position = Vector3.Lerp(otherStartPos, otherTargetPos, elapsedTime / swapDuration);
             elapsedTime += Time.deltaTime;
             yield return null;
         }
 
-        // Окончательно устанавливаем целевые позиции
         transform.position = targetPos;
         otherChip.transform.position = otherTargetPos;
+        
+        // update chips array
+        gameField.SwapChipsPositions(transform.position, otherChip.transform.position);
 
         isMoving = false;
-
-        // Обновляем сетку (фишки сменили ячейки)
-        gameField.SwapChipsPositions(transform.position, otherChip.transform.position);
+        isInAction = false;
     }
+
 }
