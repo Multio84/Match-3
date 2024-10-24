@@ -39,6 +39,7 @@ public class GameField : MonoBehaviour
     private void Update()
     {
         ClearMatches(FindMatches());
+        //CollapseTiles();
     }
 
     // game field pivot is in left bottom. This whill position it in screen center depending on the field size
@@ -93,20 +94,22 @@ public class GameField : MonoBehaviour
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width - 2; x++) {
 
+                if (chips[x, y] == null || 
+                    chips[x + 1, y] == null || 
+                    chips[x + 2, y] == null)
+                    continue;
+
                 if (chips[x, y].isInAction == true ||
                     chips[x + 1, y].isInAction == true ||
                     chips[x + 2, y].isInAction == true)
                     continue;
 
-                if (chips[x, y] != null && chips[x + 1, y] != null && chips[x + 2, y] != null) {
+                if (chips[x, y].color == chips[x + 1, y].color &&
+                    chips[x, y].color == chips[x + 2, y].color) {
 
-                    if (chips[x, y].color == chips[x + 1, y].color &&
-                        chips[x, y].color == chips[x + 2, y].color) {
-
-                        matches.Add(chips[x, y]);
-                        matches.Add(chips[x + 1, y]);
-                        matches.Add(chips[x + 2, y]);
-                    }
+                    matches.Add(chips[x, y]);
+                    matches.Add(chips[x + 1, y]);
+                    matches.Add(chips[x + 2, y]);
                 }
             }
         }
@@ -115,21 +118,23 @@ public class GameField : MonoBehaviour
         for (int y = 0; y < height - 2; y++) {
             for (int x = 0; x < width; x++) {
 
+                if (chips[x, y] == null || 
+                    chips[x, y + 1] == null || 
+                    chips[x, y + 2] == null)
+                    continue;
+
                 if (chips[x, y].isInAction == true ||
                     chips[x, y + 1].isInAction == true ||
                     chips[x, y + 2].isInAction == true)
                     continue;
 
-                if (chips[x, y] != null && chips[x, y + 1] != null && chips[x, y + 2] != null) {
+                if (chips[x, y].color == chips[x, y + 1].color &&
+                    chips[x, y].color == chips[x, y + 2].color) {
 
-                    if (chips[x, y].color == chips[x, y + 1].color &&
-                        chips[x, y].color == chips[x, y + 2].color) {
-
-                        matches.Add(chips[x, y]);
-                        matches.Add(chips[x, y + 1]);
-                        matches.Add(chips[x, y + 2]);
-                    }
-                }
+                    matches.Add(chips[x, y]);
+                    matches.Add(chips[x, y + 1]);
+                    matches.Add(chips[x, y + 2]);
+                }  
             }
         }
 
@@ -165,7 +170,6 @@ public class GameField : MonoBehaviour
     void CollapseTiles()
     {
         for (int x = 0; x < width; x++) {
-            // Начинаем с 1, потому что нет фишек выше y = 0
             for (int y = 1; y < height; y++) {
                 if (chips[x, y] == null) {
                     for (int aboveY = y; aboveY < height; aboveY++) {
