@@ -1,4 +1,5 @@
 using System.Collections;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -160,6 +161,32 @@ public class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDrag
 
         isMoving = false;
         isInAction = false;
+    }
+
+
+    float fallDuration = 0.4f;
+    float fallDelay = 0.2f;
+    float fallGravity = 1;
+
+    public void AnimateFall(Vector3 targetPos)
+    {
+        StartCoroutine(Fall(targetPos));
+    }
+
+    IEnumerator Fall(Vector3 targetPos)
+    {
+        Vector3 startPos = transform.position;
+
+        float elapsedTime = 0; 
+
+        while (elapsedTime < fallDuration) {
+            float t = Mathf.Pow(elapsedTime / fallDuration, fallGravity);
+            transform.position = Vector3.Lerp(startPos, targetPos, t);
+            elapsedTime += Time.deltaTime;
+            yield return null;
+        }
+
+        transform.position = targetPos;
     }
 
 }

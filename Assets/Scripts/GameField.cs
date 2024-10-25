@@ -40,6 +40,7 @@ public class GameField : MonoBehaviour
     {
         ClearMatches(FindMatches());
         //CollapseTiles();
+        CollapseChips();
     }
 
     // game field pivot is in left bottom. This whill position it in screen center depending on the field size
@@ -165,19 +166,28 @@ public class GameField : MonoBehaviour
 
         matches.Clear();
     }
-        
-        // move chips down after clearing matches
-    void CollapseTiles()
+
+    // chips falling down
+    void CollapseChips()
     {
         for (int x = 0; x < width; x++) {
-            for (int y = 1; y < height; y++) {
-                if (chips[x, y] == null) {
-                    for (int aboveY = y; aboveY < height; aboveY++) {
+            int emptyCellsCount = 0;
 
-                        chips[x, aboveY - 1] = chips[x, aboveY];
-                        chips[x, aboveY] = null;
-                    }
+            for (int y = 0; y < height; y++) {
+
+                // if it's an empty cell, count it
+                if (chips[x, y] == null) {
+                    emptyCellsCount++;
                 }
+                // if it's not & there are empty cells under this one, start falling onto the first empty cell
+                else if (emptyCellsCount > 0) {
+                    // the lowest empty cell in this X column
+                    Vector3 targetPos = grid.CellToWorld(new Vector3Int(x, y - emptyCellsCount, 0));
+                    chips[x, y].AnimateFall(targetPos);
+
+                    chips[x, y - emptyCellsCount] = chips[x, y];
+                    chips[x, y] = null;
+                }               
             }
         }
     }
