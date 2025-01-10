@@ -1,12 +1,10 @@
 using UnityEngine;
 
 
-
 public class GameMode : MonoBehaviour
 {
     public static GameMode Instance { get; private set; }
     public GameField gameField;
-
 
 
     private void Awake()
@@ -19,11 +17,13 @@ public class GameMode : MonoBehaviour
             Destroy(gameObject);
         }
         
-        Initialize();
+        //Initialize();
     }
 
     private void Initialize()
     {
-        gameField = FindAnyObjectByType<GameField>();        
+        gameField = FindAnyObjectByType<GameField>();
     }
 }
+
+

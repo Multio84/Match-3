@@ -1,5 +1,5 @@
+using System;
 using System.Collections;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -20,34 +20,44 @@ public class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDrag
     Camera renderCamera;
 
     public ChipColor color;
-    private GameField gameField;
+    [HideInInspector] public Vector2Int cellPos;
+    Vector3 initialPos;
+    Vector3 startDragPos;
 
-    private float dragThreshold;  // min sidtance for a chip to move, after which the chip starts swap with it's neighbour
-    private float swapDuration;
-    private float deathDuration;
-    private Vector3 initialPosition;
-    private Vector3 startDragPos;
-    private bool isDragging = false;
-    private bool isMoving = false;
+    GameField gameField;
+
+    float dragThreshold;  // min sidtance for a chip to move, after which the chip starts swap with it's neighbour
+    float deathDuration;
+    float fallDuration;
+    float fallGravity;
+    bool isDragging = false;
+    public bool isMoving = false;
+
     public bool isInAction = false; // if the chip is in action, it can't be deleted by 3 in row match
     public bool isDead = false;
+
+    public event Action OnChipLanded;
+    
 
     void Start()
     {
         gameField = GameMode.Instance.gameField;
         renderCamera = Camera.main;
 
-        swapDuration = gameField.chipSwapDuration;
         dragThreshold = gameField.chipDragThreshold;
         deathDuration = gameField.chipDeathDuration;
+        fallDuration = gameField.chipFallDuration;
+        fallGravity = gameField.chipFallGravity;
     }
 
+
+    // ========= POINTER ===========
     public void OnPointerDown(PointerEventData eventData)
     {
         if (isMoving) return;
         isInAction = true;
         // «апоминаем начальную позицию при нажатии
-        initialPosition = transform.position;
+        initialPos = transform.position;
         startDragPos = ScreenToWorldPos(eventData.position);
         isDragging = true;
         //Debug.Log("Pointer DOWN on " + color);
@@ -95,6 +105,8 @@ public class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDrag
         }
     }
 
+    // ========= MOVE ===========
+
     void Move(Vector2Int direction)
     {
         if (isMoving) return;  // »збежим одновременных перемещений
@@ -106,17 +118,23 @@ public class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDrag
         Chip otherChip = gameField.GetChip(targetCell);
 
         if (otherChip != null) {
+            // write swapping positions of chips
+            gameField.swappingCells = new Vector2Int[] { cellPos, otherChip.cellPos };
+
             // «апускаем корутину дл€ перемещени€ двух фишек
-            StartCoroutine(SwapChips(otherChip));
+            StartCoroutine(gameField.SwapChips(this, otherChip));
         }
     }
 
-    public void AnimateDeath()
+
+    // ========= DEATH ===========
+
+    public void Kill()
     {
-        StartCoroutine(Death());
+        StartCoroutine(AnimateDeath());
     }
 
-    private IEnumerator Death()
+    private IEnumerator AnimateDeath()
     {
         Vector3 startScale = transform.localScale;
         float elapsedTime = 0;
@@ -132,48 +150,16 @@ public class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDrag
         isDead = true;
     }
 
-    IEnumerator SwapChips(Chip otherChip)
+
+
+    // ========= FALL ===========
+
+    public void Fall(Vector3 targetPos)
     {
-        isMoving = true;
-
-        // set positions
-        Vector3 startPos = transform.position;
-        Vector3 otherStartPos = otherChip.transform.position;
-
-        Vector3 targetPos = otherStartPos;
-        Vector3 otherTargetPos = startPos;
-
-        float elapsedTime = 0;
-
-        // animate chips swap
-        while (elapsedTime < swapDuration) {
-            transform.position = Vector3.Lerp(startPos, targetPos, elapsedTime / swapDuration);
-            otherChip.transform.position = Vector3.Lerp(otherStartPos, otherTargetPos, elapsedTime / swapDuration);
-            elapsedTime += Time.deltaTime;
-            yield return null;
-        }
-
-        transform.position = targetPos;
-        otherChip.transform.position = otherTargetPos;
-        
-        // update chips array
-        gameField.SwapChipsPositions(transform.position, otherChip.transform.position);
-
-        isMoving = false;
-        isInAction = false;
+        StartCoroutine(AnimateFall(targetPos));
     }
 
-
-    float fallDuration = 0.4f;
-    float fallDelay = 0.2f;
-    float fallGravity = 1;
-
-    public void AnimateFall(Vector3 targetPos)
-    {
-        StartCoroutine(Fall(targetPos));
-    }
-
-    IEnumerator Fall(Vector3 targetPos)
+    IEnumerator AnimateFall(Vector3 targetPos)
     {
         Vector3 startPos = transform.position;
 
@@ -187,6 +173,9 @@ public class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDrag
         }
 
         transform.position = targetPos;
+
+        OnChipLanded?.Invoke(); // GameField is counting landed chips
+        OnChipLanded = null;    // unsubscrive from landing event
     }
 
 }

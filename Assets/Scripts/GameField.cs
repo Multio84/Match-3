@@ -1,15 +1,16 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
 
 
 public class GameField : MonoBehaviour
 {
     [Header("Grid Properties")]
     public Grid grid;
-    [SerializeField, Range(5, 7)] public int width = 7;
-    [SerializeField, Range(5, 14)] public int height = 7;
+    [Range(5, 7)] public int width = 7;
+    [Range(5, 14)] public int height = 14;
+    [SerializeField] GameObject cellsRoot;
     public GameObject cellPrefab;
     public GameObject[] chipsPrefabs;
     public Chip[,] chips;
@@ -19,6 +20,18 @@ public class GameField : MonoBehaviour
     public float chipDragThreshold;   // dragged distance after which chip moves by itself
     public float chipSwapDuration = 0.2f;  // chips swap animation time duration
     public float chipDeathDuration = 0.5f;  // seconds of chip death animation du
+    public float chipFallDuration = 0.4f;   // duration of falling chip animation
+    public float chipFallGravity = 2;   // gravity for falling chip, that is falling speed factor
+    float nextChipFallDelay = 0.2f;
+    int fallingChipsCount = 0;  // count chips before falling
+    int fieldRegionSize = 2;    // number of cells to search around the cell for all 4 directions
+    
+    public Vector2Int[] swappingCells;  // positions of chips, which have started to swap
+
+    public event Action OnFiedlChanged;
+    public event Action OnMatchesFound; // если очистка мэтчей запускаема без события, то не надо
+    public event Action OnMatchesCleared;
+    public event Action OnCollapseComplete;
 
 
     void Start()
@@ -28,7 +41,12 @@ public class GameField : MonoBehaviour
         chips = new Chip[width, height];
         GenerateFieldBack();
         GenerateGameField();
+
+        OnMatchesCleared += HandleMatchesCleared;
+        OnCollapseComplete += CheckForNewMatches;
     }
+
+    // ========= INIT ===========
 
     void Init()
     {
@@ -36,14 +54,17 @@ public class GameField : MonoBehaviour
         chipDragThreshold = cellSize / 5;
     }
 
-    private void Update()
-    {
-        ClearMatches(FindMatches());
-        //CollapseTiles();
-        CollapseChips();
-    }
+    //private void Update()
+    //{
+    //    ClearMatches(FindMatches());
+    //    StartCoroutine(CollapseChips());
+    //}
 
-    // game field pivot is in left bottom. This whill position it in screen center depending on the field size
+
+
+    // ========= GENERATE ===========
+
+    // game field pivot is in left bottom. This will position it in screen center depending on the field size
     void SetGameFieldPos()
     {
         var startGameFieldPos = transform.position;
@@ -51,6 +72,13 @@ public class GameField : MonoBehaviour
         newPos.x = (startGameFieldPos.x - cellSize * width) / 2 + cellSize / 2;
         newPos.y = (startGameFieldPos.y - cellSize * height) / 2 + cellSize / 2;
         transform.position = newPos;
+    }
+
+    void SpawnCell(Vector3Int cellPos)
+    {
+        GameObject cell = Instantiate(cellPrefab, grid.CellToWorld(cellPos), Quaternion.identity);
+        cell.transform.SetParent(cellsRoot.transform);
+        cell.name = "Cell_" + cellPos.x.ToString() + "_" + cellPos.y.ToString();
     }
 
     void GenerateFieldBack()
@@ -63,6 +91,18 @@ public class GameField : MonoBehaviour
         }
     }
 
+    void SpawnChip(Vector3Int cellPos)
+    {
+        int randomIndex = UnityEngine.Random.Range(0, chipsPrefabs.Length);
+        GameObject chip = Instantiate(chipsPrefabs[randomIndex], grid.CellToWorld(cellPos), Quaternion.identity);
+        chip.gameObject.transform.SetParent(transform);
+        chip.name = "Chip_" + cellPos.x.ToString() + "_" + cellPos.y.ToString();
+
+        Chip chipComponent = chip.GetComponent<Chip>();
+        chips[cellPos.x, cellPos.y] = chipComponent;
+        chipComponent.cellPos = new Vector2Int(cellPos.x, cellPos.y);
+    }
+
     void GenerateGameField()
     {
         for (int y = 0; y < height; y++) {
@@ -71,20 +111,94 @@ public class GameField : MonoBehaviour
                 SpawnChip(cellPos);
             }
         }
+
+        CheckForNewMatches();
     }
 
-    void SpawnCell(Vector3Int cellPos)
+
+    // ========= SWAP ===========
+
+    // animates 2 chips swap
+    public IEnumerator SwapChips(Chip chip1, Chip chip2)
     {
-        GameObject cell = Instantiate(cellPrefab, grid.CellToWorld(cellPos), Quaternion.identity);
-        cell.transform.SetParent(transform);
+        chip1.isMoving = true;
+        chip2.isMoving = true;
+
+        // set positions
+        Vector3 chip1Pos = chip1.transform.position;
+        Vector3 chip2Pos = chip2.transform.position;
+
+        Vector3 chip1NewPos = chip2Pos;
+        Vector3 chip2NewPos = chip1Pos;
+
+        float elapsedTime = 0;
+
+        // animate chips swap
+        while (elapsedTime < chipSwapDuration)
+        {
+            chip1.transform.position = Vector3.Lerp(chip1Pos, chip2Pos, elapsedTime / chipSwapDuration);
+            chip2.transform.position = Vector3.Lerp(chip2Pos, chip2NewPos, elapsedTime / chipSwapDuration);
+            elapsedTime += Time.deltaTime;
+            yield return null;
+        }
+
+        chip1.transform.position = chip2Pos;
+        chip2.transform.position = chip2NewPos;
+
+        // update chips array
+        SwapChipsPositions(chip1.transform.position, chip2.transform.position);
+
+        chip1.isMoving = false;
+        chip2.isMoving = false;
+        // нужно ли это?
+        chip1.isInAction = false;
+        chip2.isInAction = false;
+
+        //OnChipLanded?.Invoke(); // GameField is counting landed chips
+        //OnChipLanded = null;    // unsubscrive from landing event
     }
 
-    void SpawnChip(Vector3Int cellPos)
+
+    // ========= CHECK ===========
+
+    void CheckForNewMatches()
     {
-        int randomIndex = Random.Range(0, chipsPrefabs.Length);
-        GameObject chip = Instantiate(chipsPrefabs[randomIndex], grid.CellToWorld(cellPos), Quaternion.identity);
-        chip.gameObject.transform.SetParent(transform);
-        chips[cellPos.x, cellPos.y] = chip.GetComponent<Chip>();
+        var matches = FindMatches();
+
+        if (matches.Count > 0) {
+            ClearMatches(matches);
+            OnMatchesCleared?.Invoke();     // start collapsing chips
+        }
+    }
+
+    // region of 1 cell
+    Vector2Int[] GetFieldRegionBounds(Vector2Int cell)
+    {
+        Vector2Int bottomLeft = new Vector2Int(
+            Mathf.Max(cell.x - fieldRegionSize, 0),
+            Mathf.Max(cell.y - fieldRegionSize, 0)
+        );
+
+        Vector2Int rightTop = new Vector2Int(
+            Mathf.Min(cell.x + fieldRegionSize, width - 1),
+            Mathf.Min(cell.y + fieldRegionSize, height - 1)
+        );
+
+        return new Vector2Int[] { bottomLeft, rightTop };
+    }
+
+    // region of 2 adjacent cells, on which chips are being swapped
+    public Vector2Int[] GetFieldRegionBounds(Vector2Int cell1, Vector2Int cell2)
+    {
+        int minX = Mathf.Max(Mathf.Min(cell1.x, cell2.x) - fieldRegionSize, 0);
+        int minY = Mathf.Max(Mathf.Min(cell1.y, cell2.y) - fieldRegionSize, 0);
+        int maxX = Mathf.Min(Mathf.Max(cell1.x, cell2.x) + fieldRegionSize, width - 1);
+        int maxY = Mathf.Min(Mathf.Max(cell1.y, cell2.y) + fieldRegionSize, height - 1);
+
+        Vector2Int bottomLeft = new Vector2Int(minX, minY);
+        Vector2Int topRight = new Vector2Int(maxX, maxY);
+
+        return new Vector2Int[] { bottomLeft, topRight };
     }
 
     public List<Chip> FindMatches()
@@ -148,11 +262,12 @@ public class GameField : MonoBehaviour
         return matches;
     }
 
-    IEnumerator KillChip(Chip chip)
+    // ========= CLEAR ===========
+
+
+    void HandleMatchesCleared()
     {
-        chip.AnimateDeath();
-        while (!chip.isDead) { yield return null; }
-        if (chip != null) Destroy(chip.gameObject);
+        StartCoroutine(CollapseChips());
     }
 
     // destroy the matched chips
@@ -167,8 +282,19 @@ public class GameField : MonoBehaviour
         matches.Clear();
     }
 
+    IEnumerator KillChip(Chip chip)
+    {
+        chip.Kill();
+        while (!chip.isDead) { yield return null; }
+        if (chip != null) Destroy(chip.gameObject);
+    }
+
+    
+
+    // ========= FALL ===========
+
     // chips falling down
-    void CollapseChips()
+    IEnumerator CollapseChips()
     {
         for (int x = 0; x < width; x++) {
             int emptyCellsCount = 0;
@@ -179,31 +305,45 @@ public class GameField : MonoBehaviour
                 if (chips[x, y] == null) {
                     emptyCellsCount++;
                 }
-                // if it's not & there are empty cells under this one, start falling onto the first empty cell
+                // if it's not emplty & there are empty cells under this one, start falling onto the first empty cell
                 else if (emptyCellsCount > 0) {
-                    // the lowest empty cell in this X column
+                    // position of the lowest empty cell in this X column
                     Vector3 targetPos = grid.CellToWorld(new Vector3Int(x, y - emptyCellsCount, 0));
-                    chips[x, y].AnimateFall(targetPos);
+                    chips[x, y].OnChipLanded += OnChipLanded;
+                    chips[x, y].Fall(targetPos);
 
                     chips[x, y - emptyCellsCount] = chips[x, y];
                     chips[x, y] = null;
+
+                    yield return new WaitForSeconds(nextChipFallDelay);
                 }               
             }
         }
     }
 
-    // fill the empty places with new chips
-    void RefillGrid()
+    void OnChipLanded()
     {
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
-                if (chips[x, y] == null) {
-                    Vector3Int cellPos = new Vector3Int(x, y, 0);
-                    SpawnChip(cellPos);
-                }
-            }
-        }
+        fallingChipsCount--;
+
+        if (fallingChipsCount == 0) OnCollapseComplete?.Invoke();
     }
+
+
+
+    // fill the empty places with new chips
+    //void RefillGrid()
+    //{
+    //    for (int x = 0; x < width; x++) {
+    //        for (int y = 0; y < height; y++) {
+    //            if (chips[x, y] == null) {
+    //                Vector3Int cellPos = new Vector3Int(x, y, 0);
+    //                SpawnChip(cellPos);
+    //            }
+    //        }
+    //    }
+    //}
+
+    // ========= HELPERS ===========
 
     public Vector2Int GetCellPosition(Vector3 worldPos)
     {
@@ -228,12 +368,14 @@ public class GameField : MonoBehaviour
         return chips[cellPos.x, cellPos.y];
     }
 
-    public void AddChip(Vector2Int cellPos, Chip chip)
-    {
-        if (chips[cellPos.x, cellPos.y] != null) {
-            chips[cellPos.x, cellPos.y] = chip;
-        }
-    }
+    //public void AddChip(Vector2Int cellPos, Chip chip)
+    //{
+    //    if (chips[cellPos.x, cellPos.y] != null) {
+    //        chips[cellPos.x, cellPos.y] = chip;
+    //    }
+    //}
+
+    // ========= SWAP ===========
 
     public void SwapChipsPositions(Vector3 pos1, Vector3 pos2)
     {
@@ -246,5 +388,5 @@ public class GameField : MonoBehaviour
         chips[cellPos1.x, cellPos1.y] = chip2;
         chips[cellPos2.x, cellPos2.y] = chip1;
     }
-    
+
 }
