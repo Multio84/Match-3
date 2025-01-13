@@ -19,8 +19,8 @@ public class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDrag
 {
     Camera renderCamera;
 
-    public ChipColor color;
-    [HideInInspector] public Vector2Int cellPos;
+    public ChipColor Color;
+    public Vector2Int CellPos;
     Vector3 initialPos;
     Vector3 startDragPos;
 
@@ -31,13 +31,16 @@ public class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDrag
     float fallDuration;
     float fallGravity;
     bool isDragging = false;
-    public bool isMoving = false;
 
-    public bool isInAction = false; // if the chip is in action, it can't be deleted by 3 in row match
-    public bool isDead = false;
+    public bool IsMoving = false;
+    public bool IsInAction = false; // if the chip is in any action, it can't be deleted in match
+    public bool IsDead = false;
+    public bool IsMatched = false;  // if was marked as a part of some match
 
     public event Action OnChipLanded;
-    
+    public event Action<Chip> OnDeathCompleted;
+
+
 
     void Start()
     {
@@ -54,8 +57,8 @@ public class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDrag
     // ========= POINTER ===========
     public void OnPointerDown(PointerEventData eventData)
     {
-        if (isMoving) return;
-        isInAction = true;
+        if (IsMoving) return;
+        IsInAction = true;
         // Запоминаем начальную позицию при нажатии
         initialPos = transform.position;
         startDragPos = ScreenToWorldPos(eventData.position);
@@ -88,48 +91,49 @@ public class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDrag
         if (Mathf.Abs(dragDelta.x) > dragThreshold || Mathf.Abs(dragDelta.y) > dragThreshold) {
             if (Mathf.Abs(dragDelta.x) > Mathf.Abs(dragDelta.y)) {
                 if (dragDelta.x > dragThreshold) {
-                    Move(Vector2Int.right);
+                    Swap(Vector2Int.right);
                 }
                 else if (dragDelta.x < -dragThreshold) {
-                    Move(Vector2Int.left);
+                    Swap(Vector2Int.left);
                 }
             }
             else {
                 if (dragDelta.y > dragThreshold) {
-                    Move(Vector2Int.up);
+                    Swap(Vector2Int.up);
                 }
                 else if (dragDelta.y < -dragThreshold) {
-                    Move(Vector2Int.down);
+                    Swap(Vector2Int.down);
                 }
             }
         }
     }
 
+
     // ========= MOVE ===========
 
-    void Move(Vector2Int direction)
+    void Swap(Vector2Int direction)
     {
-        if (isMoving) return;  // Избежим одновременных перемещений
+        if (IsMoving) return;  // Избежим одновременных перемещений
 
         // Находим соседнюю фишку
         Vector2Int targetCell = gameField.GetCellPosition(transform.position) + direction;
         if (!gameField.IsCellInGrid(targetCell)) return;
+        Chip swappedChip = gameField.GetChip(targetCell);
 
-        Chip otherChip = gameField.GetChip(targetCell);
-
-        if (otherChip != null) {
+        if (swappedChip is not null) {
             // write swapping positions of chips
-            gameField.swappingCells = new Vector2Int[] { cellPos, otherChip.cellPos };
+            gameField.draggedChip = this;
+            gameField.swappedChip = swappedChip;
 
             // Запускаем корутину для перемещения двух фишек
-            StartCoroutine(gameField.SwapChips(this, otherChip));
+            gameField.SwapChips(this, swappedChip);
         }
     }
 
 
     // ========= DEATH ===========
 
-    public void Kill()
+    public void Die()
     {
         StartCoroutine(AnimateDeath());
     }
@@ -147,9 +151,10 @@ public class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDrag
             yield return null;
         }
 
-        isDead = true;
+        IsDead = true;
+        OnDeathCompleted?.Invoke(this);
+        Destroy(gameObject);
     }
-
 
 
     // ========= FALL ===========

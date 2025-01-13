@@ -100,7 +100,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fce5299487b32e346b73ed083cffc027, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  color: 5
+  Color: 5
+  CellPos: {x: 0, y: 0}
+  IsMoving: 0
+  IsInAction: 0
+  IsDead: 0
+  IsMatched: 0
 --- !u!61 &8001274278026696262
 BoxCollider2D:
   m_ObjectHideFlags: 0
