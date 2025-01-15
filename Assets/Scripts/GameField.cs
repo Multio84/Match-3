@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 
 public class GameField : MonoBehaviour
@@ -21,7 +22,7 @@ public class GameField : MonoBehaviour
     [Header("Chip Properties")]
     public float chipDragThreshold;   // dragged distance after which chip moves by itself
     public float chipSwapDuration = 0.2f;  // chips swap animation time duration
-    public float chipDeathDuration = 0.5f;  // seconds of chip death animation du
+    public float chipDeathDuration = 3.5f;  // seconds of chip death animation du
     public float chipFallDuration = 0.4f;   // duration of falling chip animation
     public float chipFallGravity = 2;   // gravity for falling chip, that is falling speed factor
     float nextChipFallDelay = 0.2f;
@@ -33,7 +34,7 @@ public class GameField : MonoBehaviour
     [HideInInspector] public Chip swappedChip;
     bool matchesFound = false;  // true, if at least 1 match was found
 
-    public event Action OnFiedlChanged;
+    public event Action OnSwapComplete;
     public event Action OnMatchesFound; // если очистка мэтчей запускаема без события, то не надо
     public event Action OnMatchesCleared;
     public event Action OnCollapseComplete;
@@ -41,7 +42,7 @@ public class GameField : MonoBehaviour
 
     void Start()
     {
-        Init();
+        Initialize();
         SetGameFieldPos();
         chips = new Chip[width, height];
         GenerateFieldBack();
@@ -53,19 +54,11 @@ public class GameField : MonoBehaviour
 
     // ========= INIT ===========
 
-    void Init()
+    void Initialize()
     {
         cellSize = grid.cellSize.x;
         chipDragThreshold = cellSize / 5;
     }
-
-    //private void Update()
-    //{
-    //    ClearMatches(FindMatches());
-    //    StartCoroutine(CollapseChips());
-    //}
-
-
 
     // ========= GENERATE ===========
 
@@ -117,9 +110,9 @@ public class GameField : MonoBehaviour
             }
         }
 
-        if (FindMatches(GetFieldBounds())) {
-            ClearMatches();
-        }
+        //if (FindMatches(GetFieldBounds())) {
+        //    ClearMatches();
+        //}
     }
 
     // ========= CHECK ===========
@@ -140,13 +133,14 @@ public class GameField : MonoBehaviour
         return new Vector2Int[] { bottomLeft, rightTop };
     }
 
-    // region of 2 adjacent cells, on which chips are being swapped
+    // region to search for matches for 2 adjacent cells, on which chips are being swapped
     public Vector2Int[] GetFieldRegionBounds(Vector2Int cell1, Vector2Int cell2)
     {
-        int minX = Mathf.Max(Mathf.Min(cell1.x, cell2.x) - MaxMatchSize - 1, 0);
-        int minY = Mathf.Max(Mathf.Min(cell1.y, cell2.y) - MaxMatchSize - 1, 0);
-        int maxX = Mathf.Min(Mathf.Max(cell1.x, cell2.x) + MaxMatchSize - 1, width - 1);
-        int maxY = Mathf.Min(Mathf.Max(cell1.y, cell2.y) + MaxMatchSize - 1, height - 1);
+        int searchDistance = MinMatchSize - 1;    // distance (from swappind chips) in cells to search
+        int minX = Mathf.Max(Mathf.Min(cell1.x, cell2.x) - searchDistance, 0);
+        int minY = Mathf.Max(Mathf.Min(cell1.y, cell2.y) - searchDistance, 0);
+        int maxX = Mathf.Min(Mathf.Max(cell1.x, cell2.x) + searchDistance, width - 1);
+        int maxY = Mathf.Min(Mathf.Max(cell1.y, cell2.y) + searchDistance, height - 1);
 
         Vector2Int bottomLeft = new Vector2Int(minX, minY);
         Vector2Int topRight = new Vector2Int(maxX, maxY);
@@ -196,12 +190,12 @@ public class GameField : MonoBehaviour
         // horizontal check
         for (int y = min.y; y <= max.y; y++) {
             for (int x = min.x; x <= max.x; x++) {
-                if (chips[x, y].IsMatched == true) continue;
+                if (!IsValidChip(x, y)) continue;
+                //if (chips[x, y].IsMatched == true) continue;
 
                 for (int i = 0; i < MaxMatchSize; i++) {
                     int checkX = x + i * direction.x;
                     int checkY = y + i * direction.y;
-
                     if (!IsValidChip(checkX, checkY)) break;
 
                     if (i == 0) {
@@ -231,15 +225,15 @@ public class GameField : MonoBehaviour
     bool IsValidChip(int x, int y)
     {
         if (!IsCellInField(x, y)) {
-            Debug.LogError($"Cell ({x}, {y}) is not in field.");
+            //Debug.Log($"Cell ({x}, {y}) is not in field.");
             return false;
         }
         if (chips[x, y] == null) {
-            Debug.LogError($"Cell ({x}, {y}) is null.");
+            //Debug.Log($"Cell ({x}, {y}) is null.");
             return false;
         }
         if (chips[x, y].IsMatched == true) {
-            Debug.Log($"Cell ({x}, {y}) is Matched already.");
+            //Debug.Log($"Cell ({x}, {y}) is Matched already.");
             return false;
         }
 
@@ -250,12 +244,15 @@ public class GameField : MonoBehaviour
 
     // ========= CLEAR ===========
 
+
     // destroy the matched chips
     void ClearMatches()
     {
         foreach (var chip in chips) {
             if (chip is not null && chip.IsMatched) {
+                chip.OnDeathCompleted -= HandleChipDeath;   // to exclude double subscription
                 chip.OnDeathCompleted += HandleChipDeath;
+                //Debug.LogError($"Chip {chip.CellPos} is to be deleted");
                 chip.Die();
             }
         }
@@ -263,10 +260,33 @@ public class GameField : MonoBehaviour
         matchesFound = false;
     }
 
+    //void HandleChipDeath(Chip chip)
+    //{
+    //    chips[chip.CellPos.x, chip.CellPos.y] = null;
+    //    chip.OnDeathCompleted -= HandleChipDeath;
+    //    Destroy(chip.gameObject);
+    //    //Debug.LogError($"Chip {chip.CellPos} was deleted");
+    //}
+
     void HandleChipDeath(Chip chip)
     {
-        chips[chip.CellPos.x, chip.CellPos.y] = null;
+        if (chips[chip.CellPos.x, chip.CellPos.y] == chip) {
+            chips[chip.CellPos.x, chip.CellPos.y] = null;
+            Debug.Log($"Chip_{chip.CellPos.x}_{chip.CellPos.y} removed successfully.");
+        }
+        else {
+            Debug.LogWarning($"Mismatch or null reference for Chip_{chip.CellPos.x}_{chip.CellPos.y}");
+        }
+
         chip.OnDeathCompleted -= HandleChipDeath;
+
+        if (chip is not null && chip.gameObject is not null) {
+            Destroy(chip.gameObject);
+            chip = null;
+        }
+        else {
+            Debug.LogWarning($"Trying to destroy non-existing chip.");
+        }
     }
 
     void HandleMatchesCleared()
@@ -274,26 +294,46 @@ public class GameField : MonoBehaviour
         StartCoroutine(CollapseChips());
     }
 
-
     // ========= SWAP ===========
 
-    public void SwapChips(Chip draggedChip, Chip swappedChip)
+    public void SwapChips(bool isReverseSwap)
     {
+        if (isReverseSwap) {
+            Chip reverseDraggedChip = swappedChip;
+            Chip reverseSwappedChip = draggedChip;
+
+            swappedChip = reverseDraggedChip;
+            draggedChip = reverseSwappedChip;
+        }
+
         draggedChip.IsMoving = true;
         swappedChip.IsMoving = true;
 
-        StartCoroutine(AnimateChipsSwapping(draggedChip, swappedChip));
+        OnSwapComplete += HandleSwap;
+
+        StartCoroutine(AnimateChipsSwapping());
+    }
+
+    void HandleSwap()
+    {
+        Vector2Int[] bounds = GetFieldRegionBounds(draggedChip.CellPos, swappedChip.CellPos);
+
+        if (FindMatches(bounds)) {
+            Debug.Log($"{draggedChip} and {swappedChip} were swapped.");
+            ClearMatches();
+        }
+        else {
+            SwapChips(true); // reverse swap
+            Debug.Log($"{draggedChip} and {swappedChip} reversed swap!");
+        }
     }
 
     // animates 2 chips swap
-    IEnumerator AnimateChipsSwapping(Chip draggedChip, Chip swappedChip)
+    IEnumerator AnimateChipsSwapping()
     {
         // set positions
         Vector3 chip1Pos = draggedChip.transform.position;
         Vector3 chip2Pos = swappedChip.transform.position;
-
-        //Vector3 chip1NewPos = chip2Pos;
-        //Vector3 chip2NewPos = chip1Pos;
 
         float elapsedTime = 0;
 
@@ -309,29 +349,33 @@ public class GameField : MonoBehaviour
         draggedChip.transform.position = chip2Pos;
         swappedChip.transform.position = chip1Pos;
 
-        SwapChipsCellsInGrid(draggedChip.CellPos, swappedChip.CellPos);
+        SwapChipsCellsInGrid(draggedChip, swappedChip);
+    }
+
+    public void SwapChipsCellsInGrid(Chip draggedChip, Chip swappedChip)
+    {
+        Vector2Int cellPos1 = draggedChip.CellPos;
+        Vector2Int cellPos2 = swappedChip.CellPos;
+
+        // change places in array
+        chips[cellPos1.x, cellPos1.y] = swappedChip;
+        chips[cellPos2.x, cellPos2.y] = draggedChip;
+
+        // change cellposes in chip's properties
+        draggedChip.CellPos = cellPos2;
+        swappedChip.CellPos = cellPos1;
 
         draggedChip.IsMoving = false;
         swappedChip.IsMoving = false;
 
-        // нужно ли это?
+        // TODO: нужно ли это?
         draggedChip.IsInAction = false;
         swappedChip.IsInAction = false;
 
-        // TODO actions:
-        //OnChipLanded?.Invoke(); // GameField is counting landed chips
-        //OnChipLanded = null;    // unsubscrive from landing event
+        OnSwapComplete?.Invoke();
+        OnSwapComplete = null;  // unsubscribe
     }
-
-    // swaps chips in Chips array
-    public void SwapChipsCellsInGrid(Vector2Int cell1, Vector2Int cell2)
-    {
-        Chip chip1 = chips[cell1.x, cell1.y];
-        Chip chip2 = chips[cell2.x, cell2.y];
-
-        chips[cell1.x, cell1.y] = chip2;
-        chips[cell2.x, cell2.y] = chip1;
-    }
+    
 
     // ========= FALL ===========
 

@@ -113,20 +113,17 @@ public class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDrag
 
     void Swap(Vector2Int direction)
     {
-        if (IsMoving) return;  // Избежим одновременных перемещений
+        if (IsMoving) return;
 
-        // Находим соседнюю фишку
+        // find adjacent chip to swap with this
         Vector2Int targetCell = gameField.GetCellPosition(transform.position) + direction;
         if (!gameField.IsCellInGrid(targetCell)) return;
         Chip swappedChip = gameField.GetChip(targetCell);
 
         if (swappedChip is not null) {
-            // write swapping positions of chips
             gameField.draggedChip = this;
             gameField.swappedChip = swappedChip;
-
-            // Запускаем корутину для перемещения двух фишек
-            gameField.SwapChips(this, swappedChip);
+            gameField.SwapChips(false);
         }
     }
 
@@ -140,11 +137,23 @@ public class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDrag
 
     private IEnumerator AnimateDeath()
     {
+        if (this is null || gameObject is null)
+        {
+            Debug.LogWarning("Trying to animate dead chip. Step 1.");
+            yield break;
+        }
+
         Vector3 startScale = transform.localScale;
         float elapsedTime = 0;
 
         while (elapsedTime < deathDuration)
         {
+            if (this is null || gameObject is null)
+            {
+                Debug.LogWarning("Trying to animate dead chip. Step 2.");
+                yield break;
+            }
+
             transform.localScale = Vector3.Lerp(startScale, Vector3.zero, elapsedTime / deathDuration);
 
             elapsedTime += Time.deltaTime;
@@ -153,7 +162,6 @@ public class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDrag
 
         IsDead = true;
         OnDeathCompleted?.Invoke(this);
-        Destroy(gameObject);
     }
 
 
