@@ -120,14 +120,15 @@ public class GameField : MonoBehaviour
     // region of 1 cell
     Vector2Int[] GetFieldRegionBounds(Vector2Int cell)
     {
-        Vector2Int bottomLeft = new Vector2Int(
-            Mathf.Max(cell.x - MaxMatchSize - 1, 0),
-            Mathf.Max(cell.y - MaxMatchSize - 1, 0)
-        );
+        int searchDistance = MinMatchSize - 1;    // distance (from swappind chips) in cells to search
 
+        Vector2Int bottomLeft = new Vector2Int(
+            Mathf.Max(cell.x - searchDistance, 0),
+            Mathf.Max(cell.y - searchDistance, 0)
+        );
         Vector2Int rightTop = new Vector2Int(
-            Mathf.Min(cell.x + MaxMatchSize - 1, width - 1),
-            Mathf.Min(cell.y + MaxMatchSize - 1, height - 1)
+            Mathf.Min(cell.x + searchDistance, width - 1),
+            Mathf.Min(cell.y + searchDistance, height - 1)
         );
 
         return new Vector2Int[] { bottomLeft, rightTop };
@@ -155,12 +156,6 @@ public class GameField : MonoBehaviour
             new Vector2Int(width - 1, height - 1)
         };
     }
-
-    //public void GetFieldBounds(out Vector2Int min, out Vector2Int max)
-    //{
-    //    min = new Vector2Int(0, 0);
-    //    max = new Vector2Int(width - 1, height - 1);
-    //}
 
     bool FindMatches(Vector2Int[] bounds)
     {
@@ -190,8 +185,8 @@ public class GameField : MonoBehaviour
         // horizontal check
         for (int y = min.y; y <= max.y; y++) {
             for (int x = min.x; x <= max.x; x++) {
+                // TODO: when all common algorythm is done, check if it's really needed:
                 if (!IsValidChip(x, y)) continue;
-                //if (chips[x, y].IsMatched == true) continue;
 
                 for (int i = 0; i < MaxMatchSize; i++) {
                     int checkX = x + i * direction.x;
@@ -228,12 +223,8 @@ public class GameField : MonoBehaviour
             //Debug.Log($"Cell ({x}, {y}) is not in field.");
             return false;
         }
-        if (chips[x, y] == null) {
+        if (chips[x, y] is null) {
             //Debug.Log($"Cell ({x}, {y}) is null.");
-            return false;
-        }
-        if (chips[x, y].IsMatched == true) {
-            //Debug.Log($"Cell ({x}, {y}) is Matched already.");
             return false;
         }
 
@@ -241,9 +232,7 @@ public class GameField : MonoBehaviour
     }
 
 
-
     // ========= CLEAR ===========
-
 
     // destroy the matched chips
     void ClearMatches()
@@ -296,12 +285,11 @@ public class GameField : MonoBehaviour
 
     // ========= SWAP ===========
 
-    public void SwapChips(bool isReverseSwap)
+    public void SwapChips(bool isReverse)
     {
-        if (isReverseSwap) {
+        if (isReverse) {
             Chip reverseDraggedChip = swappedChip;
             Chip reverseSwappedChip = draggedChip;
-
             swappedChip = reverseDraggedChip;
             draggedChip = reverseSwappedChip;
         }
@@ -310,7 +298,6 @@ public class GameField : MonoBehaviour
         swappedChip.IsMoving = true;
 
         OnSwapComplete += HandleSwap;
-
         StartCoroutine(AnimateChipsSwapping());
     }
 
