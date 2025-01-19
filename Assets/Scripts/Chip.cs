@@ -14,15 +14,30 @@ public enum ChipColor
     White
 }
 
-
+[RequireComponent(typeof(SpriteRenderer))]
 public class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDragHandler
 {
     Camera renderCamera;
 
     public ChipColor Color;
     public Vector2Int CellPos;
-    Vector3 initialPos;
     Vector3 startDragPos;
+    SpriteRenderer sr;
+    [HideInInspector]
+    // the chip is invisible when it's created while playing, until it has finished appearing
+    bool isVisible = false;
+    public bool IsVisible 
+    { 
+        get => isVisible;
+        set {
+            isVisible = value;
+            SpriteRenderer sr = GetComponent<SpriteRenderer>();
+            Color color = sr.color;
+            sr.color = isVisible ?
+                new Color(color.r, color.g, color.b, 1) :
+                new Color(color.r, color.g, color.b, 0);
+        }
+    }
 
     GameField gameField;
 
@@ -30,6 +45,7 @@ public class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDrag
     float deathDuration;
     float fallDuration;
     float fallGravity;
+    float distanceToAppear;
     bool isDragging = false;
 
     public bool IsMoving = false;
@@ -42,15 +58,18 @@ public class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDrag
 
 
 
-    void Start()
+    void Awake()
     {
         gameField = GameMode.Instance.gameField;
         renderCamera = Camera.main;
+        sr = GetComponent<SpriteRenderer>();
 
         dragThreshold = gameField.chipDragThreshold;
         deathDuration = gameField.chipDeathDuration;
         fallDuration = gameField.chipFallDuration;
         fallGravity = gameField.chipFallGravity;
+        distanceToAppear = gameField.cellSize;
+        IsVisible = false;
     }
 
 
@@ -59,8 +78,6 @@ public class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDrag
     {
         if (IsMoving) return;
         IsInAction = true;
-        // Запоминаем начальную позицию при нажатии
-        initialPos = transform.position;
         startDragPos = ScreenToWorldPos(eventData.position);
         isDragging = true;
         //Debug.Log("Pointer DOWN on " + color);
@@ -69,13 +86,11 @@ public class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDrag
     public void OnPointerUp(PointerEventData eventData)
     {
         isDragging = false;
-
         //Debug.Log("Pointer UP on " + color);
     }
 
     Vector3 ScreenToWorldPos(Vector3 screenPosition)
     {
-        // Преобразуем экранные координаты в мировые
         return renderCamera.ScreenToWorldPoint(screenPosition);
     }
 
@@ -109,15 +124,15 @@ public class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDrag
     }
 
 
-    // ========= MOVE ===========
+    // ========= SWAP ===========
 
     void Swap(Vector2Int direction)
     {
         if (IsMoving) return;
 
         // find adjacent chip to swap with this
-        Vector2Int targetCell = gameField.GetCellPosition(transform.position) + direction;
-        if (!gameField.IsCellInGrid(targetCell)) return;
+        Vector2Int targetCell = gameField.GetCellGridPosition(transform.position) + direction;
+        if (!gameField.IsCellInField(targetCell.x, targetCell.y)) return;
         Chip swappedChip = gameField.GetChip(targetCell);
 
         if (swappedChip is not null) {
@@ -137,8 +152,7 @@ public class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDrag
 
     private IEnumerator AnimateDeath()
     {
-        if (this is null || gameObject is null)
-        {
+        if (this is null || gameObject is null) {
             Debug.LogWarning("Trying to animate dead chip. Step 1.");
             yield break;
         }
@@ -146,10 +160,8 @@ public class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDrag
         Vector3 startScale = transform.localScale;
         float elapsedTime = 0;
 
-        while (elapsedTime < deathDuration)
-        {
-            if (this is null || gameObject is null)
-            {
+        while (elapsedTime < deathDuration) {
+            if (this is null || gameObject is null) {
                 Debug.LogWarning("Trying to animate dead chip. Step 2.");
                 yield break;
             }
@@ -169,6 +181,8 @@ public class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDrag
 
     public void Fall(Vector3 targetPos)
     {
+        if (!IsVisible) StartCoroutine(AnimateAppearance());
+
         StartCoroutine(AnimateFall(targetPos));
     }
 
@@ -189,6 +203,24 @@ public class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDrag
 
         OnChipLanded?.Invoke(); // GameField is counting landed chips
         OnChipLanded = null;    // unsubscrive from landing event
+    }
+
+    IEnumerator AnimateAppearance()
+    {
+        Vector3 startPos = transform.position;
+        float distanceTraveled = 0f;
+        Color originalColor = sr.color;
+
+        while (distanceTraveled < distanceToAppear) {
+            distanceTraveled = Mathf.Abs(transform.position.y - startPos.y);
+            float alpha = Mathf.Clamp01(distanceTraveled / distanceToAppear);
+
+            sr.color = new Color(originalColor.r, originalColor.g, originalColor.b, alpha);
+
+            yield return null;
+        }
+
+        IsVisible = true;
     }
 
 }

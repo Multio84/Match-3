@@ -16,14 +16,8 @@ public class GameMode : MonoBehaviour
         else if (Instance != this) {
             Destroy(gameObject);
         }
-        
-        //Initialize();
     }
 
-    private void Initialize()
-    {
-        gameField = FindAnyObjectByType<GameField>();
-    }
 }
 
 
