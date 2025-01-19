@@ -166,7 +166,7 @@ MonoBehaviour:
   chipSwapDuration: 0.2
   chipDeathDuration: 0.2
   chipFallDuration: 0.4
-  chipFallGravity: 2
+  chipFallGravity: 3
   draggedChip: {fileID: 0}
   swappedChip: {fileID: 0}
 --- !u!4 &442388761

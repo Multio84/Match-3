@@ -1,10 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
-using UnityEditor.Experimental.GraphView;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 
 public class GameField : MonoBehaviour
@@ -25,17 +22,18 @@ public class GameField : MonoBehaviour
     public float chipDeathDuration = 3.5f;  // seconds of chip death animation du
     public float chipFallDuration = 0.4f;   // duration of falling chip animation
     public float chipFallGravity = 2;   // gravity for falling chip, that is falling speed factor
-    float nextChipFallDelay = 0.2f;
+    const float NextChipFallDelay = 0.05f;
+    const float ReverseSwapDelay = 0.15f;
     int fallingChipsCount = 0;  // count chips before falling
     const int MinMatchSize = 3;    // number of cells, minimum for match in line, except the first chip
     const int MaxMatchSize = 14;    // number of cells, maximum for match in line, except the first chip
 
     [HideInInspector] public Chip draggedChip;
     [HideInInspector] public Chip swappedChip;
+
     bool matchesFound = false;  // true, if at least 1 match was found
 
     public event Action OnSwapComplete;
-    public event Action OnMatchesFound; // если очистка мэтчей запускаема без события, то не надо
     public event Action OnMatchesCleared;
     public event Action OnCollapseComplete;
 
@@ -50,6 +48,11 @@ public class GameField : MonoBehaviour
 
         OnMatchesCleared += HandleMatchesCleared;
         //OnCollapseComplete += CheckForNewMatches;
+    }
+
+    private void OnDestroy()
+    {
+        OnMatchesCleared -= HandleMatchesCleared;
     }
 
     // ========= INIT ===========
@@ -89,16 +92,22 @@ public class GameField : MonoBehaviour
         }
     }
 
-    void SpawnChip(Vector3Int cellPos)
+    Chip SpawnChip(Vector3Int cellPos)
     {
         int randomIndex = UnityEngine.Random.Range(0, chipsPrefabs.Length);
         GameObject chip = Instantiate(chipsPrefabs[randomIndex], grid.CellToWorld(cellPos), Quaternion.identity);
         chip.gameObject.transform.SetParent(transform);
         chip.name = "Chip_" + cellPos.x.ToString() + "_" + cellPos.y.ToString();
 
-        Chip chipComponent = chip.GetComponent<Chip>();
-        chips[cellPos.x, cellPos.y] = chipComponent;
-        chipComponent.CellPos = new Vector2Int(cellPos.x, cellPos.y);
+        return chip.GetComponent<Chip>();
+    }
+
+    bool SyncChipWithBoard(Vector3Int cellPos, Chip chip)
+    {
+        if (!IsCellInField(cellPos.x, cellPos.y)) return false;
+        chips[cellPos.x, cellPos.y] = chip;
+        chip.CellPos = new Vector2Int(cellPos.x, cellPos.y);
+        return true;
     }
 
     void GenerateGameField()
@@ -106,7 +115,10 @@ public class GameField : MonoBehaviour
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 Vector3Int cellPos = new Vector3Int(x, y, 0);
-                SpawnChip(cellPos);
+                if (!SyncChipWithBoard(cellPos, SpawnChip(cellPos)))
+                {
+                    Debug.LogWarning("Attempt to swapn a chip outside the GameField");
+                };
             }
         }
 
@@ -219,11 +231,13 @@ public class GameField : MonoBehaviour
 
     bool IsValidChip(int x, int y)
     {
-        if (!IsCellInField(x, y)) {
+        if (!IsCellInField(x, y))
+        {
             //Debug.Log($"Cell ({x}, {y}) is not in field.");
             return false;
         }
-        if (chips[x, y] is null) {
+        if (chips[x, y] is null)
+        {
             //Debug.Log($"Cell ({x}, {y}) is null.");
             return false;
         }
@@ -232,62 +246,12 @@ public class GameField : MonoBehaviour
     }
 
 
-    // ========= CLEAR ===========
-
-    // destroy the matched chips
-    void ClearMatches()
-    {
-        foreach (var chip in chips) {
-            if (chip is not null && chip.IsMatched) {
-                chip.OnDeathCompleted -= HandleChipDeath;   // to exclude double subscription
-                chip.OnDeathCompleted += HandleChipDeath;
-                //Debug.LogError($"Chip {chip.CellPos} is to be deleted");
-                chip.Die();
-            }
-        }
-
-        matchesFound = false;
-    }
-
-    //void HandleChipDeath(Chip chip)
-    //{
-    //    chips[chip.CellPos.x, chip.CellPos.y] = null;
-    //    chip.OnDeathCompleted -= HandleChipDeath;
-    //    Destroy(chip.gameObject);
-    //    //Debug.LogError($"Chip {chip.CellPos} was deleted");
-    //}
-
-    void HandleChipDeath(Chip chip)
-    {
-        if (chips[chip.CellPos.x, chip.CellPos.y] == chip) {
-            chips[chip.CellPos.x, chip.CellPos.y] = null;
-            Debug.Log($"Chip_{chip.CellPos.x}_{chip.CellPos.y} removed successfully.");
-        }
-        else {
-            Debug.LogWarning($"Mismatch or null reference for Chip_{chip.CellPos.x}_{chip.CellPos.y}");
-        }
-
-        chip.OnDeathCompleted -= HandleChipDeath;
-
-        if (chip is not null && chip.gameObject is not null) {
-            Destroy(chip.gameObject);
-            chip = null;
-        }
-        else {
-            Debug.LogWarning($"Trying to destroy non-existing chip.");
-        }
-    }
-
-    void HandleMatchesCleared()
-    {
-        StartCoroutine(CollapseChips());
-    }
-
     // ========= SWAP ===========
 
     public void SwapChips(bool isReverse)
     {
-        if (isReverse) {
+        if (isReverse)
+        {
             Chip reverseDraggedChip = swappedChip;
             Chip reverseSwappedChip = draggedChip;
             swappedChip = reverseDraggedChip;
@@ -305,11 +269,13 @@ public class GameField : MonoBehaviour
     {
         Vector2Int[] bounds = GetFieldRegionBounds(draggedChip.CellPos, swappedChip.CellPos);
 
-        if (FindMatches(bounds)) {
+        if (FindMatches(bounds))
+        {
             Debug.Log($"{draggedChip} and {swappedChip} were swapped.");
             ClearMatches();
         }
-        else {
+        else
+        {
             SwapChips(true); // reverse swap
             Debug.Log($"{draggedChip} and {swappedChip} reversed swap!");
         }
@@ -336,10 +302,12 @@ public class GameField : MonoBehaviour
         draggedChip.transform.position = chip2Pos;
         swappedChip.transform.position = chip1Pos;
 
-        SwapChipsCellsInGrid(draggedChip, swappedChip);
+        yield return new WaitForSeconds(ReverseSwapDelay);
+
+        UpdateSwapInGrid(draggedChip, swappedChip);
     }
 
-    public void SwapChipsCellsInGrid(Chip draggedChip, Chip swappedChip)
+    public void UpdateSwapInGrid(Chip draggedChip, Chip swappedChip)
     {
         Vector2Int cellPos1 = draggedChip.CellPos;
         Vector2Int cellPos2 = swappedChip.CellPos;
@@ -362,37 +330,164 @@ public class GameField : MonoBehaviour
         OnSwapComplete?.Invoke();
         OnSwapComplete = null;  // unsubscribe
     }
+
+
+    // ========= CLEAR ===========
+
+    int chipsToDelete = 0;  // number of chips, going to be deleted in current iteration
+
+    // destroy the matched chips
+    void ClearMatches()
+    {
+        foreach (var chip in chips) {
+            if (chip is not null && chip.IsMatched) {
+                chip.OnDeathCompleted -= HandleChipDeath;   // to exclude double subscription
+                chip.OnDeathCompleted += HandleChipDeath;
+                //Debug.LogError($"Chip {chip.CellPos} is to be deleted");
+                chipsToDelete++;
+                chip.Die();
+            }
+        }
+        matchesFound = false;
+    }
+
+    //void HandleChipDeath(Chip chip)
+    //{
+    //    chips[chip.CellPos.x, chip.CellPos.y] = null;
+    //    chip.OnDeathCompleted -= HandleChipDeath;
+    //    Destroy(chip.gameObject);
+    //    //Debug.LogError($"Chip {chip.CellPos} was deleted");
+    //}
+
+    void HandleChipDeath(Chip chip)
+    {
+        if (chips[chip.CellPos.x, chip.CellPos.y] == chip) {
+            chips[chip.CellPos.x, chip.CellPos.y] = null;
+            Debug.Log($"Chip_{chip.CellPos.x}_{chip.CellPos.y} removed successfully.");
+        }
+        else {
+            Debug.LogWarning($"Mismatch or null reference for Chip_{chip.CellPos.x}_{chip.CellPos.y}");
+        }
+
+        chip.OnDeathCompleted -= HandleChipDeath;
+
+        if (chip is not null && chip.gameObject is not null) {
+            Destroy(chip.gameObject);
+            chip = null;
+            chipsToDelete--;
+            if (chipsToDelete == 0) {
+                OnMatchesCleared?.Invoke();
+            }
+        }
+        else {
+            Debug.LogWarning($"Trying to destroy non-existing chip.");
+        }
+    }
+
+    void HandleMatchesCleared()
+    {
+        StartCoroutine(CollapseChips());
+    }
     
 
     // ========= FALL ===========
 
-    // chips falling down
-    IEnumerator CollapseChips()
+    // BACKUP: chips falling down
+    IEnumerator CollapseChips_V1()
     {
-        for (int x = 0; x < width; x++) {
-            int emptyCellsCount = 0;
+        for (int x = 0; x < height; x++) {
+            int emptyCellsInColumnCount = 0;
 
-            for (int y = 0; y < height; y++) {
+            for (int y = 0; y < width; y++) {
 
                 // if it's an empty cell, count it
                 if (chips[x, y] == null) {
-                    emptyCellsCount++;
+                    emptyCellsInColumnCount++;
                 }
-                // if it's not emplty & there are empty cells under this one, start falling onto the first empty cell
-                else if (emptyCellsCount > 0) {
+                // else, if there are empty cells under this one, start falling onto the first empty cell
+                else if (emptyCellsInColumnCount > 0) {
                     // position of the lowest empty cell in this X column
-                    Vector3 targetPos = grid.CellToWorld(new Vector3Int(x, y - emptyCellsCount, 0));
+                    Vector3 targetPos = grid.CellToWorld(new Vector3Int(x, y - emptyCellsInColumnCount, 0));
                     chips[x, y].OnChipLanded += OnChipLanded;
                     chips[x, y].Fall(targetPos);
 
-                    chips[x, y - emptyCellsCount] = chips[x, y];
+                    chips[x, y - emptyCellsInColumnCount] = chips[x, y];
                     chips[x, y] = null;
 
-                    yield return new WaitForSeconds(nextChipFallDelay);
+                    yield return new WaitForSeconds(NextChipFallDelay);
                 }
             }
         }
     }
+
+    /*
+    === НОВЫЙ АЛГОРИТМ КОЛЛАПСА ===
+    
+    Пример поля ("О" - фишка, "." - удалённая фишка):
+    6 - О О О О О О
+    5 - О О О О О О
+    4 - О О О О . .
+    3 - О О . О . .
+    2 - О . . . . О
+    1 - О О . О О О
+    0 - О О О О О О
+        | | | | | |
+        0 1 2 3 4 5
+    
+    0. Создаём "словарь падения". Ключ - Vector2Int (ячейка, координаты для падения), 
+        значение - Chip (фишка, которая должна упасть в указанную ячейку).
+    1. Проходим по массиву фишек по столбцам (по Y) снизу вверх:
+        - Как только встречается нул-фишка, записываем её как ячейку. Идём дальше, остальные null не записываем.
+        - Если нул-фишка была найдена, как только встречается просто фишка, создаём элемент словаря с ключом найденной ячейки и значением найденной фишки
+        - Если в поисках фишки дошли до верхней границы поля, 
+            создаём рандомную фишку в позиции (x, height) - то есть за границей поля - 
+            с нулевой прозрачностью (КОТОРУЮ НАДО КАК_ТО АНИМИРОВАТЬ....)
+            - создаём элемент словаря так же как раньше, но с новой фишкой
+    2. После проверки всех столбцов поля, проходим по всем элементам словаря и 
+        - вызываем для каждой фишки метод Fall() с координатами из ключа элемента
+        - удаляем элемент из словаря
+        - под конец на всякий очищаем словарь (?)
+    3. Повторяем цикл. Если ни одна нул-фишка не найдена - выходим из цикла.
+                
+    Идеи:
+    - bool hasNullChip - есть удалённая фишка. Включаем тру, когда фишка в текущем столбце была найдена. 
+        Перед переходом к следующему столбцу присваиваем фолс
+    - возможно для анимации прозрачности нужно будет сделать ещё одну корутину, 
+        которая будет запускаться одновременно с Fall и будет интерполировать альфу 
+        в зависимости от высоты ячейки: от height до (height - 1)
+    */
+
+
+    IEnumerator CollapseChips()
+    {
+        Dictionary<Vector2Int, Chip> chipsToFall = new Dictionary<Vector2Int, Chip>();
+        bool columnHasNullChip = false;
+        Vector2Int nullBottomChip = new Vector2Int();
+
+        for (int x = 0; x < height; x++) {
+            for (int y = 0; y < width; y++) {
+                if (!IsValidChip(x, y)) {
+                    Debug.LogError("Invalid Chip!");
+                    break;
+                }
+
+                if (!columnHasNullChip && chips[x, y] is null) {
+                    nullBottomChip = new Vector2Int(x, y);
+                    columnHasNullChip = true;
+                    continue;
+                }
+                if (columnHasNullChip && chips[x, y] is not null) {
+                    chipsToFall.Add(nullBottomChip, chips[x, y]);
+                    break;
+                }
+
+                if (columnHasNullChip && y == height - 1) {
+                    // create chip
+                }
+            }
+        }
+    }
+
 
     void OnChipLanded()
     {
