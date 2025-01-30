@@ -30,7 +30,6 @@ public class GameField : MonoBehaviour
     int totalChipsToFallCount = 0;  // chip collapse in rows: one row after another. This is total count of chips of all rows to collapse until collapse is done
     [HideInInspector] public Chip draggedChip;
     [HideInInspector] public Chip swappedChip;
-    bool matchesFound = false;  // true, if at least 1 match was found
 
     public event Action OnSwapComplete;
     public event Action OnMatchesCleared;
@@ -46,12 +45,12 @@ public class GameField : MonoBehaviour
         GenerateGameField();
 
         OnMatchesCleared += HandleMatchesCleared;
-        //OnCollapseComplete += CheckForNewMatches;
     }
 
-    private void OnDestroy()
+    private void OnDisable()
     {
         OnMatchesCleared -= HandleMatchesCleared;
+        OnSwapComplete -= HandleSwap;
     }
 
     // ========= INIT ===========
@@ -174,14 +173,18 @@ public class GameField : MonoBehaviour
     {
         if (bounds.Length != 2) throw new ArgumentException("The method requires exactly two cell corners of GameField.");
 
-        CheckMatchesInDirection(bounds, Vector2Int.right);
-        CheckMatchesInDirection(bounds, Vector2Int.up);
+        Debug.LogWarning("FIND MATCHES was called");
 
-        return matchesFound;
+        if (CheckMatchesInDirection(bounds, Vector2Int.right) ||
+        CheckMatchesInDirection(bounds, Vector2Int.up))
+            return true;
+
+        return false;
     }
 
     bool CheckMatchesInDirection(Vector2Int[] bounds, Vector2Int direction)
     {
+        bool matchesFound = false;
         Vector2Int min = bounds[0];
         Vector2Int max = bounds[1];
         // for search in reduced region in each direction
@@ -349,7 +352,6 @@ public class GameField : MonoBehaviour
             }
         }
         totalChipsToFallCount = chipsToDelete;
-        matchesFound = false;
     }
 
     void HandleChipDeath(Chip chip)
@@ -362,23 +364,31 @@ public class GameField : MonoBehaviour
             Debug.LogWarning($"Mismatch or null reference for Chip_{chip.CellPos}");
         }
 
-        chip.OnDeathCompleted -= HandleChipDeath;
+        UnsubscribeFromChip(chip);
 
-        if (chip is not null && chip.gameObject is not null) {
-            Destroy(chip.gameObject);
-            chip = null;
-            chipsToDelete--;
-            if (chipsToDelete == 0) {
-                OnMatchesCleared?.Invoke();
-            }
-        }
-        else {
+        if (chip is null || chip.gameObject is null) {
             Debug.LogWarning($"Trying to destroy non-existing chip.");
+            return;
         }
+
+        Destroy(chip.gameObject);
+        chip = null;
+        chipsToDelete--;
+
+        if (chipsToDelete <= 0) OnMatchesCleared?.Invoke();
+    }
+
+    void UnsubscribeFromChip(Chip chip)
+    {
+        if (chip is null) return;
+
+        chip.OnDeathCompleted -= HandleChipDeath;
+        chip.OnChipLanded -= HandleChipLanded;
     }
 
     void HandleMatchesCleared()
     {
+        Debug.Log("Matches cleared. Starting Collapse.");
         CollapseChips();
     }
     
@@ -403,8 +413,6 @@ public class GameField : MonoBehaviour
 
             iteration++;
         }
-
-        OnCollapseComplete?.Invoke();
     }
 
     // Collects chips, that should fall simultaneously, and their target cells
@@ -455,9 +463,9 @@ public class GameField : MonoBehaviour
 
             // chip created outside of the field is not in chips array yet,
             // so it doesn't have to be nullified
-            if (IsCellInField(chipCell.x, chipCell.y)) {
+            if (IsCellInField(chipCell.x, chipCell.y))
                 chips[chipCell.x, chipCell.y] = null;
-            }
+            
             chips[targetCell.x, targetCell.y] = entry.Value;
             chips[targetCell.x, targetCell.y].CellPos = targetCell;
         }
@@ -471,17 +479,22 @@ public class GameField : MonoBehaviour
             Vector3Int targetCell = new Vector3Int(entry.Key.x, entry.Key.y, 0);
             Chip chip = entry.Value;
 
-            chip.OnChipLanded += OnChipsLanded;
+            chip.OnChipLanded += HandleChipLanded;
             Vector3 pos = grid.CellToWorld(targetCell);
             chip.Fall(pos);
         }
         yield return null;
     }
 
-    void OnChipsLanded()
+    void HandleChipLanded()
     {
         totalChipsToFallCount--;
-        if (totalChipsToFallCount == 0) OnCollapseComplete?.Invoke();
+        if (totalChipsToFallCount == 0) HandleCollapseComplete();
+    }
+
+    void HandleCollapseComplete()
+    {
+        //if (FindMatches(GetFieldBounds())) ClearMatches();
     }
 
     public Vector2Int GetCellGridPosition(Vector3 worldPos)

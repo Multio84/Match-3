@@ -72,7 +72,6 @@ public class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDrag
         IsVisible = false;
     }
 
-
     // ========= POINTER ===========
     public void OnPointerDown(PointerEventData eventData)
     {
