@@ -165,6 +165,7 @@ public class GameField : MonoBehaviour
 
     bool matchesFound = false;
 
+    // find line matches inside the set region
     void FindMatches(Vector2Int[] bounds)
     {
         if (bounds.Length != 2) throw new ArgumentException("The method requires exactly two cell corners of GameField.");
@@ -238,7 +239,7 @@ public class GameField : MonoBehaviour
 
     // ========= SWAP ===========
 
-    public void SwapChips(bool isReverse)
+    public void Swap(bool isReverse)
     {
         if (isReverse) {
             Chip reverseDraggedChip = swappedChip;
@@ -247,11 +248,11 @@ public class GameField : MonoBehaviour
             draggedChip = reverseSwappedChip;
         }
 
-        draggedChip.IsMoving = true;
-        swappedChip.IsMoving = true;
+        draggedChip.IsSwapping = true;
+        swappedChip.IsSwapping = true;
 
         OnSwapComplete += HandleSwap;
-        StartCoroutine(AnimateChipsSwapping());
+        StartCoroutine(AnimateSwap());
     }
 
     void HandleSwap()
@@ -260,11 +261,11 @@ public class GameField : MonoBehaviour
         FindMatches(bounds);
 
         if (matchesFound) ClearMatches();
-        else SwapChips(true); // reverse swap
+        else Swap(true); // reverse swap
     }
 
     // animates 2 chips swap
-    IEnumerator AnimateChipsSwapping()
+    IEnumerator AnimateSwap()
     {
         // set positions
         Vector3 chip1Pos = draggedChip.transform.position;
@@ -301,10 +302,9 @@ public class GameField : MonoBehaviour
         draggedChip.CellPos = cellPos2;
         swappedChip.CellPos = cellPos1;
 
-        draggedChip.IsMoving = false;
-        swappedChip.IsMoving = false;
+        draggedChip.IsSwapping = false;
+        swappedChip.IsSwapping = false;
 
-        // TODO: нужно ли это?
         draggedChip.IsInAction = false;
         swappedChip.IsInAction = false;
 
