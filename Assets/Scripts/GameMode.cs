@@ -1,6 +1,7 @@
 using UnityEngine;
 
 
+[DefaultExecutionOrder(-100)]
 public class GameMode : MonoBehaviour
 {
     public static GameMode Instance { get; private set; }
@@ -17,7 +18,4 @@ public class GameMode : MonoBehaviour
             Destroy(gameObject);
         }
     }
-
 }
-
-

@@ -106,9 +106,11 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
     public void OnDrag(PointerEventData eventData)
     {
         if (!isDragging) return;
+        if (IsSwapping) return;
 
         Vector3 currentDragPosition = ScreenToWorldPos(eventData.position);
         Vector3 dragDelta = currentDragPosition - startDragPos;
+        Vector2Int direction = Vector2Int.zero;
 
         if (Mathf.Abs(dragDelta.x) > dragThreshold || Mathf.Abs(dragDelta.y) > dragThreshold)
         {
@@ -116,42 +118,26 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
             {
                 if (dragDelta.x > dragThreshold)
                 {
-                    Swap(Vector2Int.right);
+                    direction = Vector2Int.right;
                 }
                 else if (dragDelta.x < -dragThreshold)
                 {
-                    Swap(Vector2Int.left);
+                    direction = Vector2Int.left;
                 }
             }
             else
             {
                 if (dragDelta.y > dragThreshold)
                 {
-                    Swap(Vector2Int.up);
+                    direction = Vector2Int.up;
                 }
                 else if (dragDelta.y < -dragThreshold)
                 {
-                    Swap(Vector2Int.down);
+                    direction = Vector2Int.down;
                 }
             }
-        }
-    }
 
-    void Swap(Vector2Int direction)
-    {
-        if (IsSwapping) return;
-        //Debug.Log($"Chip {Color} in {CellPos} is being swapped");
-
-        // find adjacent chip to swap with this
-        Vector2Int targetCell = gameField.GetCellGridPosition(transform.position) + direction;
-        if (!gameField.IsCellInField(targetCell.x, targetCell.y)) return;
-        Chip swappedChip = gameField.GetChip(targetCell);
-
-        if (swappedChip is not null)
-        {
-            gameField.draggedChip = this;
-            gameField.swappedChip = swappedChip;
-            gameField.Swap(false);
+            SwapManager.Instance.Swap(this, direction, false);
         }
     }
 
