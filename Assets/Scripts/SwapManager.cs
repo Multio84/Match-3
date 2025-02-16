@@ -33,8 +33,13 @@ public class SwapManager : MonoBehaviour
 
     public void Swap(Chip chip, Vector2Int direction, bool isReverse)
     {
-        SwapOperation swapOperation = GetSwapOperation(chip, direction, isReverse);
-        StartCoroutine(AnimateSwap(swapOperation));
+        SwapOperation operation = GetSwapOperation(chip, direction, isReverse);
+        if (operation is null)
+        {
+            Debug.Log("Swap operation is null.");
+            return;
+        }
+        StartCoroutine(AnimateSwap(operation));
     }
 
     SwapOperation GetSwapOperation(Chip chip, Vector2Int direction, bool isReverse)
@@ -55,28 +60,28 @@ public class SwapManager : MonoBehaviour
     }
 
     // animates 2 chips swap
-    IEnumerator AnimateSwap(SwapOperation swapOperation)
+    IEnumerator AnimateSwap(SwapOperation operation)
     {
         // set positions
-        Vector3 chip1Pos = swapOperation.draggedChip.transform.position;
-        Vector3 chip2Pos = swapOperation.swappedChip.transform.position;
+        Vector3 chip1Pos = operation.draggedChip.transform.position;
+        Vector3 chip2Pos = operation.swappedChip.transform.position;
 
         float elapsedTime = 0;
 
         // animate chips swap
         while (elapsedTime < ChipSwapDuration)
         {
-            swapOperation.draggedChip.transform.position = Vector3.Lerp(chip1Pos, chip2Pos, elapsedTime / ChipSwapDuration);
-            swapOperation.swappedChip.transform.position = Vector3.Lerp(chip2Pos, chip1Pos, elapsedTime / ChipSwapDuration);
+            operation.draggedChip.transform.position = Vector3.Lerp(chip1Pos, chip2Pos, elapsedTime / ChipSwapDuration);
+            operation.swappedChip.transform.position = Vector3.Lerp(chip2Pos, chip1Pos, elapsedTime / ChipSwapDuration);
             elapsedTime += Time.deltaTime;
             yield return null;
         }
 
-        swapOperation.draggedChip.transform.position = chip2Pos;
-        swapOperation.swappedChip.transform.position = chip1Pos;
+        operation.draggedChip.transform.position = chip2Pos;
+        operation.swappedChip.transform.position = chip1Pos;
 
         yield return new WaitForSeconds(ReverseSwapDelay);
 
-        gameField.UpdateSwapInGrid(swapOperation);
+        gameField.UpdateSwapInGrid(operation);
     }
 }
