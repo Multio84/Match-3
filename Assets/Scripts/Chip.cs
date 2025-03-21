@@ -54,9 +54,9 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
     public event Action OnChipLanded;
 
 
-    protected virtual void Awake()
+    public virtual void Init(GameField gf, Vector2Int cellPos)
     {
-        gameField = GameMode.Instance.gameField;
+        gameField = gf;
         renderCamera = Camera.main;
         sr = GetComponent<SpriteRenderer>();
 
@@ -65,6 +65,7 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
         fallDuration = gameField.chipFallDuration;
         fallGravity = gameField.chipFallGravity;
         distanceToAppear = gameField.cellSize;
+        CellPos = cellPos;
         IsVisible = false;
         IsSwapping = false;
     }
@@ -137,7 +138,7 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
                 }
             }
 
-            SwapManager.Instance.Swap(this, direction, false);
+            gameField.swapManager.Swap(this, direction, false);
         }
     }
 

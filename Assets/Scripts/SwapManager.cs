@@ -4,7 +4,7 @@ using System.Collections;
 
 public class SwapManager : MonoBehaviour
 {
-    public static SwapManager Instance { get; private set; }
+    //public static SwapManager Instance { get; private set; }
     GameField gameField;
 
     const float ChipSwapDuration = 0.2f;    // chips swap animation time duration in seconds
@@ -13,22 +13,20 @@ public class SwapManager : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance == null)
-        {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
-        else if (Instance != this)
-        {
-            Destroy(gameObject);
-        }
-
-        Initialize();
+        //if (Instance == null)
+        //{
+        //    Instance = this;
+        //    DontDestroyOnLoad(gameObject);
+        //}
+        //else if (Instance != this)
+        //{
+        //    Destroy(gameObject);
+        //}
     }
 
-    private void Initialize()
+    public void Setup(GameField gf)
     {
-        gameField = GameMode.Instance.gameField;
+        gameField = gf;
     }
 
     public void Swap(Chip chip, Vector2Int direction, bool isReverse)

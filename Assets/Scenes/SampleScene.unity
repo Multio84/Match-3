@@ -195,7 +195,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   grid: {fileID: 442388762}
   width: 7
-  height: 14
+  height: 10
   cellsRoot: {fileID: 1277953088}
   cellPrefab: {fileID: 8740310698612739118, guid: d32dc4beec913a5408a85ad3109d8d04, type: 3}
   chipsPrefabs:
@@ -659,8 +659,8 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 519420032}
-  - {fileID: 799705122}
   - {fileID: 1484995266}
   - {fileID: 1984465178}
   - {fileID: 225914033}
   - {fileID: 1762809760}
+  - {fileID: 799705122}

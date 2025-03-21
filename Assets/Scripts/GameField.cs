@@ -7,6 +7,9 @@ using UnityEngine;
 
 public class GameField : MonoBehaviour
 {
+    MatchManager matchManager;
+    public SwapManager swapManager;
+
     [Header("Grid Properties")]
     public Grid grid;
     [Range(5, 7)] public int width = 7;
@@ -27,6 +30,7 @@ public class GameField : MonoBehaviour
     int totalChipsToFallCount = 0;  // chip collapse in rows: one row after another. This is total count of chips of all rows to collapse until collapse is done
     int chipsToDelete = 0;  // number of chips, going to be deleted in current iteration
 
+
     void Start()
     {
         Initialize();
@@ -40,6 +44,12 @@ public class GameField : MonoBehaviour
     {
         cellSize = grid.cellSize.x;
         chipDragThreshold = cellSize / 5;
+    }
+
+    public void Setup(MatchManager mm, SwapManager sm)
+    {
+        matchManager = mm;
+        swapManager = sm;
     }
 
     // game field pivot is in left bottom. This will position field in screen center, depending on the field size
@@ -56,12 +66,12 @@ public class GameField : MonoBehaviour
     {
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
-                SpawnCell(new Vector3Int(x, y, 0));
+                SpawnFieldCell(new Vector3Int(x, y, 0));
             }
         }
     }
 
-    void SpawnCell(Vector3Int cellPos)
+    void SpawnFieldCell(Vector3Int cellPos)
     {
         GameObject cell = Instantiate(cellPrefab, grid.CellToWorld(cellPos), Quaternion.identity);
         cell.transform.SetParent(cellsRoot.transform);
@@ -80,7 +90,7 @@ public class GameField : MonoBehaviour
             }
         }
 
-        if (MatchManager.Instance.FindMatches(null)) ClearMatches();   
+        if (matchManager.FindMatches(null)) ClearMatches();   
     }
 
     Chip SpawnChip(Vector2Int cellPos)
@@ -90,7 +100,7 @@ public class GameField : MonoBehaviour
         GameObject chipObj = Instantiate(chipsPrefabs[randomIndex], grid.CellToWorld(cell3DPos), Quaternion.identity);
         chipObj.transform.SetParent(transform);
         Chip chip = chipObj.GetComponent<Chip>();
-        chip.CellPos = cellPos;
+        chip.Init(this, cellPos);
         //chip.name = "Chip_" + cellPos.x.ToString() + "_" + cellPos.y.ToString();
 
         return chip;
@@ -143,7 +153,7 @@ public class GameField : MonoBehaviour
             return;
         }
 
-        if (MatchManager.Instance.FindMatches(operation))
+        if (matchManager.FindMatches(operation))
         {
             operation.Stop();
             ClearMatches();
@@ -151,7 +161,7 @@ public class GameField : MonoBehaviour
         else
         {
             // reverse swap: previously swapped chip becomes the "dragged" one
-            SwapManager.Instance.Swap(operation.swappedChip, operation.direction, true);
+            swapManager.Swap(operation.swappedChip, operation.direction, true);
         }
     }
 
@@ -218,7 +228,7 @@ public class GameField : MonoBehaviour
     async void CollapseChips()
     {
         int iteration = 0;
-        int maxIterations = height * 10;    // protection from infinite loop
+        int maxIterations = height * 10;    // protection from the infinite loop
 
         while (iteration < maxIterations) {
             Dictionary<Vector2Int, Chip> chipsToFall = CollectChipsToFall();
@@ -312,7 +322,7 @@ public class GameField : MonoBehaviour
 
     void HandleCollapseComplete()
     {
-        if (MatchManager.Instance.FindMatches(null))
+        if (matchManager.FindMatches(null))
             ClearMatches();
     }
 

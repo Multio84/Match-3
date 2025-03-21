@@ -4,7 +4,6 @@ using UnityEngine;
 
 public class MatchManager : MonoBehaviour
 {
-    public static MatchManager Instance { get; private set; }
     GameField gameField;
 
     static int fieldWidth;
@@ -26,22 +25,26 @@ public class MatchManager : MonoBehaviour
 
     void Awake()
     {
-        if (Instance == null)
-        {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
-        else if (Instance != this)
-        {
-            Destroy(gameObject);
-        }
+        //if (Instance == null)
+        //{
+        //    Instance = this;
+        //    DontDestroyOnLoad(gameObject);
+        //}
+        //else if (Instance != this)
+        //{
+        //    Destroy(gameObject);
+        //}
 
+        //Initialize();
+    }
+    public void Setup(GameField gf)
+    {
+        gameField = gf;
         Initialize();
     }
 
     void Initialize()
     {
-        gameField = GameMode.Instance.gameField;
         fieldWidth = gameField.width;
         fieldHeight = gameField.height;
         fieldBottomLeft = Vector2Int.zero;
@@ -72,7 +75,7 @@ public class MatchManager : MonoBehaviour
         Vector2Int cell1 = operation.draggedChip.CellPos;
         Vector2Int cell2 = operation.swappedChip.CellPos;
 
-        int searchDistance = MatchManager.MinMatchSize - 1;    // distance (from swapped chips) in cells to search
+        int searchDistance = MinMatchSize - 1;    // distance (from swapped chips) in cells to search
         int minX = Mathf.Max(Mathf.Min(cell1.x, cell2.x) - searchDistance, 0);
         int minY = Mathf.Max(Mathf.Min(cell1.y, cell2.y) - searchDistance, 0);
         int maxX = Mathf.Min(Mathf.Max(cell1.x, cell2.x) + searchDistance, fieldWidth - 1);
