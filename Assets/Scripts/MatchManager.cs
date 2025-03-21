@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
-public class MatchManager : MonoBehaviour
+public class MatchManager : MonoBehaviour, IInitializable
 {
     GameField gameField;
 
@@ -23,27 +23,12 @@ public class MatchManager : MonoBehaviour
     HashSet<Chip> chipsToCheck = new HashSet<Chip>(MaxMatchSize);   // chips in line, that should be checked for match
 
 
-    void Awake()
-    {
-        //if (Instance == null)
-        //{
-        //    Instance = this;
-        //    DontDestroyOnLoad(gameObject);
-        //}
-        //else if (Instance != this)
-        //{
-        //    Destroy(gameObject);
-        //}
-
-        //Initialize();
-    }
     public void Setup(GameField gf)
     {
         gameField = gf;
-        Initialize();
     }
 
-    void Initialize()
+    public void Init()
     {
         fieldWidth = gameField.width;
         fieldHeight = gameField.height;

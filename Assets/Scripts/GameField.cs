@@ -5,18 +5,17 @@ using System.Threading.Tasks;
 using UnityEngine;
 
 
-public class GameField : MonoBehaviour
+public class GameField : MonoBehaviour, IInitializable
 {
+    LevelGenerator levelGenerator;
     MatchManager matchManager;
-    public SwapManager swapManager;
+    [HideInInspector] public SwapManager swapManager;
 
     [Header("Grid Properties")]
     public Grid grid;
     [Range(5, 7)] public int width = 7;
     [Range(5, 14)] public int height = 14;
-    [SerializeField] GameObject cellsRoot;
-    public GameObject cellPrefab;
-    public GameObject[] chipsPrefabs;
+
     public Chip[,] chips;
     public float cellSize;
 
@@ -31,23 +30,18 @@ public class GameField : MonoBehaviour
     int chipsToDelete = 0;  // number of chips, going to be deleted in current iteration
 
 
-    void Start()
-    {
-        Initialize();
-        SetGameFieldPos();
-        chips = new Chip[width, height];
-        GenerateFieldBack();
-        GenerateGameField();
-    }
-
-    void Initialize()
+    public void Init()
     {
         cellSize = grid.cellSize.x;
         chipDragThreshold = cellSize / 5;
+        chips = new Chip[width, height];
+
+        SetGameFieldPos();
     }
 
-    public void Setup(MatchManager mm, SwapManager sm)
+    public void Setup(LevelGenerator lg, MatchManager mm, SwapManager sm)
     {
+        levelGenerator = lg;
         matchManager = mm;
         swapManager = sm;
     }
@@ -62,51 +56,7 @@ public class GameField : MonoBehaviour
         transform.position = newPos;
     }
 
-    void GenerateFieldBack()
-    {
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                SpawnFieldCell(new Vector3Int(x, y, 0));
-            }
-        }
-    }
-
-    void SpawnFieldCell(Vector3Int cellPos)
-    {
-        GameObject cell = Instantiate(cellPrefab, grid.CellToWorld(cellPos), Quaternion.identity);
-        cell.transform.SetParent(cellsRoot.transform);
-        cell.name = "Cell_" + cellPos.x.ToString() + "_" + cellPos.y.ToString();
-    }
-
-    void GenerateGameField()
-    {
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                Vector2Int cellPos = new Vector2Int(x, y);
-                Chip chip = SpawnChip(cellPos);
-                chip.IsVisible = true;
-                if (!SyncChipWithBoard(chip))
-                    Debug.LogWarning("Attempt to swapn a chip outside the GameField: not synchronised");
-            }
-        }
-
-        if (matchManager.FindMatches(null)) ClearMatches();   
-    }
-
-    Chip SpawnChip(Vector2Int cellPos)
-    {
-        int randomIndex = UnityEngine.Random.Range(0, chipsPrefabs.Length);
-        Vector3Int cell3DPos = new Vector3Int(cellPos.x, cellPos.y, 0);
-        GameObject chipObj = Instantiate(chipsPrefabs[randomIndex], grid.CellToWorld(cell3DPos), Quaternion.identity);
-        chipObj.transform.SetParent(transform);
-        Chip chip = chipObj.GetComponent<Chip>();
-        chip.Init(this, cellPos);
-        //chip.name = "Chip_" + cellPos.x.ToString() + "_" + cellPos.y.ToString();
-
-        return chip;
-    }
-
-    bool SyncChipWithBoard(Chip chip)
+    public bool SyncChipWithBoard(Chip chip)
     {
         Vector2Int cell = chip.CellPos;
         if (!IsCellInField(cell.x, cell.y)) return false;
@@ -129,7 +79,7 @@ public class GameField : MonoBehaviour
         return true;
     }
 
-    public void UpdateSwapInGrid(SwapOperation operation)
+    public void UpdateSwappedChips(SwapOperation operation)
     {
         Vector2Int cell1 = operation.draggedChip.CellPos;
         Vector2Int cell2 = operation.swappedChip.CellPos;
@@ -166,7 +116,7 @@ public class GameField : MonoBehaviour
     }
 
     // destroy the matched chips
-    void ClearMatches()
+    public void ClearMatches()
     {
         chipsToDelete = 0;
         foreach (var chip in chips) {
@@ -261,7 +211,7 @@ public class GameField : MonoBehaviour
 
                     if (y == height - 1) {
                         // spawn and save new chip outside (over) field
-                        Chip newChip = SpawnChip(new Vector2Int(x, height));
+                        Chip newChip = levelGenerator.SpawnChip(new Vector2Int(x, height));
                         if (!chipsToFall.TryAdd(bottomCell.Value, newChip))
                             Debug.LogError($"Duplicate target cell {bottomCell.Value} while adding new chip {newChip}");
                         break;
@@ -326,17 +276,22 @@ public class GameField : MonoBehaviour
             ClearMatches();
     }
 
-    public Vector2Int GetCellGridPosition(Vector3 worldPos)
+    public Vector2Int GetCellGridPos(Vector3 worldPos)
     {
-        Vector2Int cellPos = new Vector2Int(
-            grid.WorldToCell(worldPos).x,
-            grid.WorldToCell(worldPos).y
-        );
-        return cellPos;
+        Vector3Int cellPos3 = grid.WorldToCell(worldPos);
+
+        return new Vector2Int(cellPos3.x, cellPos3.y);
+    }
+
+    public Vector3 GetCellWorldPos(Vector2Int cellPos)
+    {
+        return grid.CellToWorld(new Vector3Int(cellPos.x, cellPos.y, 0));
     }
 
     public bool IsCellInField(int x, int y)
     {
+        if (chips == null) Debug.LogError("Chips array is empty!");
+
         if (x < 0 || x >= chips.GetLength(0) ||
             y < 0 || y >= chips.GetLength(1)) {
             return false;

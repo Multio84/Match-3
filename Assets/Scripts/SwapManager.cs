@@ -4,25 +4,11 @@ using System.Collections;
 
 public class SwapManager : MonoBehaviour
 {
-    //public static SwapManager Instance { get; private set; }
     GameField gameField;
 
     const float ChipSwapDuration = 0.2f;    // chips swap animation time duration in seconds
     const float ReverseSwapDelay = 0.15f;   // seconds before automatic reverse swap, when manual swap didn't lead to match
 
-
-    private void Awake()
-    {
-        //if (Instance == null)
-        //{
-        //    Instance = this;
-        //    DontDestroyOnLoad(gameObject);
-        //}
-        //else if (Instance != this)
-        //{
-        //    Destroy(gameObject);
-        //}
-    }
 
     public void Setup(GameField gf)
     {
@@ -80,6 +66,6 @@ public class SwapManager : MonoBehaviour
 
         yield return new WaitForSeconds(ReverseSwapDelay);
 
-        gameField.UpdateSwapInGrid(operation);
+        gameField.UpdateSwappedChips(operation);
     }
 }
