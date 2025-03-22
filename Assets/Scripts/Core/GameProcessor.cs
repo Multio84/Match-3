@@ -1,7 +1,6 @@
 using UnityEngine;
 
 
-[DefaultExecutionOrder(1000)]
 public class GameProcessor : MonoBehaviour
 {
     LevelGenerator levelGenerator;
@@ -9,7 +8,12 @@ public class GameProcessor : MonoBehaviour
 
     public void Setup(LevelGenerator lg)
     {
-        this.levelGenerator = lg;
+        if (lg == null)
+        {
+            Debug.LogError("GameProcessor: LevelGenerator is null.");
+        }
+
+        levelGenerator = lg;
     }
 
     private void Awake()

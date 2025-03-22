@@ -1,7 +1,5 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+
 using UnityEngine;
 
 
@@ -10,6 +8,7 @@ public class GameField : MonoBehaviour, IInitializable
     LevelGenerator levelGenerator;
     MatchManager matchManager;
     [HideInInspector] public SwapManager swapManager;
+    CollapseManager collapseManager;
 
     [Header("Grid Properties")]
     public Grid grid;
@@ -23,12 +22,16 @@ public class GameField : MonoBehaviour, IInitializable
     public float chipDragThreshold;   // dragged distance after which chip moves by itself
 
     public float chipDeathDuration = 2f;  // seconds of chip death animation du
-    public float chipFallDuration = 0.4f;   // duration of falling chip animation
-    public float chipFallGravity = 2;   // gravity for falling chip, that is falling speed factor
-    const int ChipsFallDelay = 10;  // miliseconds to await before next set of chips falling
-    int totalChipsToFallCount = 0;  // chip collapse in rows: one row after another. This is total count of chips of all rows to collapse until collapse is done
+    
     int chipsToDelete = 0;  // number of chips, going to be deleted in current iteration
 
+
+    public void Setup(MatchManager mm, SwapManager sm, CollapseManager cm)
+    {
+        matchManager = mm;
+        swapManager = sm;
+        collapseManager = cm;
+    }
 
     public void Init()
     {
@@ -37,13 +40,6 @@ public class GameField : MonoBehaviour, IInitializable
         chips = new Chip[width, height];
 
         SetGameFieldPos();
-    }
-
-    public void Setup(LevelGenerator lg, MatchManager mm, SwapManager sm)
-    {
-        levelGenerator = lg;
-        matchManager = mm;
-        swapManager = sm;
     }
 
     // game field pivot is in left bottom. This will position field in screen center, depending on the field size
@@ -59,7 +55,8 @@ public class GameField : MonoBehaviour, IInitializable
     public bool SyncChipWithBoard(Chip chip)
     {
         Vector2Int cell = chip.CellPos;
-        if (!IsCellInField(cell.x, cell.y)) return false;
+
+        if (!IsCellInField(cell)) return false;
         chips[cell.x, cell.y] = chip;
 
         return true;
@@ -67,7 +64,7 @@ public class GameField : MonoBehaviour, IInitializable
 
     public bool IsValidChip(int x, int y)
     {
-        if (!IsCellInField(x, y)) {
+        if (!IsCellInField(new Vector2Int (x, y))) {
             //Debug.Log($"Cell ({x}, {y}) is not in field.");
             return false;
         }
@@ -129,7 +126,7 @@ public class GameField : MonoBehaviour, IInitializable
             }
         }
         //Debug.Log($"Chips sent to die: {chipsToDelete}");
-        totalChipsToFallCount = chipsToDelete;
+        collapseManager.totalChipsToFallCount = chipsToDelete;
     }
 
     void HandleChipDeath(Chip chip)
@@ -163,117 +160,13 @@ public class GameField : MonoBehaviour, IInitializable
         if (chip is null) return;
 
         chip.OnDeathCompleted -= HandleChipDeath;
-        chip.OnChipLanded -= HandleChipLanded;
+        chip.OnChipLanded -= collapseManager.HandleChipLanded;
     }
 
     void HandleMatchesCleared()
     {
         //Debug.Log("Matches cleared. Starting Collapse.");
-        CollapseChips();
-    }
-    
-
-    // ========= COLLAPSE ===========
-
-    async void CollapseChips()
-    {
-        int iteration = 0;
-        int maxIterations = height * 10;    // protection from the infinite loop
-
-        while (iteration < maxIterations) {
-            Dictionary<Vector2Int, Chip> chipsToFall = CollectChipsToFall();
-            if (chipsToFall.Count == 0) {
-                //Debug.Log("No more chips to fall were found.");
-                break;
-            }
-
-            SyncFallingChipsWithBoard(chipsToFall);
-            StartCoroutine(DropChips(chipsToFall));
-            await Task.Delay(ChipsFallDelay);
-
-            iteration++;
-        }
-    }
-
-    // Collects chips, that should fall simultaneously, and their target cells
-    Dictionary<Vector2Int, Chip> CollectChipsToFall()
-    {
-        Dictionary<Vector2Int, Chip> chipsToFall = new Dictionary<Vector2Int, Chip>();
-
-        for (int x = 0; x < width; x++) {
-            Vector2Int? bottomCell = null;  // first cell (from bottom) without chip in current column
-
-            for (int y = 0; y < height; y++) {
-                if (chips[x ,y] is null) {
-                    if (bottomCell is null){
-                        bottomCell = new Vector2Int(x, y);  // save bottom cell
-                    }
-
-                    if (y == height - 1) {
-                        // spawn and save new chip outside (over) field
-                        Chip newChip = levelGenerator.SpawnChip(new Vector2Int(x, height));
-                        if (!chipsToFall.TryAdd(bottomCell.Value, newChip))
-                            Debug.LogError($"Duplicate target cell {bottomCell.Value} while adding new chip {newChip}");
-                        break;
-                    }
-                }
-                else if (bottomCell.HasValue) {
-                    // save old chip to fall
-                    if (!chipsToFall.TryAdd(bottomCell.Value, chips[x, y]))
-                        Debug.LogError($"Duplicate target cell {bottomCell.Value} while adding existing chip {chips[x, y]}");
-                    break;
-                }
-            }
-        }
-
-        return chipsToFall;
-    }
-
-    // changes chip's position in array: moves it from start chip's place to the cellPos
-    void SyncFallingChipsWithBoard(Dictionary<Vector2Int, Chip> chipsToFall)
-    {
-        foreach (var entry in chipsToFall) {
-            Vector2Int targetCell = entry.Key;
-            Vector2Int chipCell = entry.Value.CellPos;
-
-            if (!IsCellInField(targetCell.x, targetCell.y)) {
-                Debug.LogError("Sync field while collapsing: target cell for falling chip is outside the field.");
-                break;
-            }
-
-            // chip created outside of the field is not in chips array yet,
-            // so it doesn't have to be nullified
-            if (IsCellInField(chipCell.x, chipCell.y))
-                chips[chipCell.x, chipCell.y] = null;
-            
-            chips[targetCell.x, targetCell.y] = entry.Value;
-            chips[targetCell.x, targetCell.y].CellPos = targetCell;
-        }
-    }
-
-    IEnumerator DropChips(Dictionary<Vector2Int, Chip> chipsToFall)
-    {
-        foreach (var entry in chipsToFall) {
-            Vector3Int targetCell = new Vector3Int(entry.Key.x, entry.Key.y, 0);
-            Chip chip = entry.Value;
-
-            chip.OnChipLanded += HandleChipLanded;
-            Vector3 pos = grid.CellToWorld(targetCell);
-            chip.Fall(pos);
-        }
-        yield return null;
-    }
-
-    void HandleChipLanded()
-    {
-        totalChipsToFallCount--;
-        if (totalChipsToFallCount == 0) HandleCollapseComplete();
-    }
-
-    void HandleCollapseComplete()
-    {
-        if (matchManager.FindMatches(null))
-            ClearMatches();
+        collapseManager.CollapseChips();
     }
 
     public Vector2Int GetCellGridPos(Vector3 worldPos)
@@ -288,12 +181,12 @@ public class GameField : MonoBehaviour, IInitializable
         return grid.CellToWorld(new Vector3Int(cellPos.x, cellPos.y, 0));
     }
 
-    public bool IsCellInField(int x, int y)
+    public bool IsCellInField(Vector2Int cellPos)
     {
         if (chips == null) Debug.LogError("Chips array is empty!");
 
-        if (x < 0 || x >= chips.GetLength(0) ||
-            y < 0 || y >= chips.GetLength(1)) {
+        if (cellPos.x < 0 || cellPos.x >= chips.GetLength(0) ||
+            cellPos.y < 0 || cellPos.y >= chips.GetLength(1)) {
             return false;
         }
         return true;

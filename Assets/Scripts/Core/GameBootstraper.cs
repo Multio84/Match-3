@@ -1,15 +1,15 @@
 using UnityEngine;
 
 
-[DefaultExecutionOrder(100)]
-public class Bootstrap : MonoBehaviour
+[DefaultExecutionOrder(-1000)]
+public class GameBootstraper : MonoBehaviour
 {
     [SerializeField] GameProcessor processor;
     [SerializeField] GameField gameField;
     [SerializeField] LevelGenerator levelGenerator;
     [SerializeField] MatchManager matchManager;
     [SerializeField] SwapManager swapManager;
-
+    [SerializeField] CollapseManager collapseManager;
     IInitializable[] initializables;
 
 
@@ -27,16 +27,18 @@ public class Bootstrap : MonoBehaviour
             gameField == null ||
             levelGenerator == null ||
             matchManager == null ||
-            swapManager == null)
+            swapManager == null ||
+            collapseManager == null)
         {
-            Debug.LogError("Bootstrap: Не установлены ссылки в инспекторе!");
+            Debug.LogError("GameBootstrapper: Не установлены ссылки в инспекторе!");
             return;
         }
 
-        gameField.Setup(levelGenerator, matchManager, swapManager);
-        levelGenerator.Setup(gameField, matchManager);
+        gameField.Setup(matchManager, swapManager, collapseManager);
+        levelGenerator.Setup(gameField, matchManager, collapseManager);
         matchManager.Setup(gameField);
         swapManager.Setup(gameField);
+        collapseManager.Setup(gameField,levelGenerator,matchManager);
 
         processor.Setup(levelGenerator);
     }

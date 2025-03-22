@@ -21,6 +21,7 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
     protected Vector3 startDragPos;
     protected SpriteRenderer sr;
     protected GameField gameField;
+    protected CollapseManager collapseManager;
 
     public ChipColor Color;
     public Vector2Int CellPos { get; set; }
@@ -54,16 +55,17 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
     public event Action OnChipLanded;
 
 
-    public virtual void Init(GameField gf, Vector2Int cellPos)
+    public virtual void Init(GameField gf, CollapseManager cm, Vector2Int cellPos)
     {
         gameField = gf;
+        collapseManager = cm;
         renderCamera = Camera.main;
         sr = GetComponent<SpriteRenderer>();
 
         dragThreshold = gameField.chipDragThreshold;
         deathDuration = gameField.chipDeathDuration;
-        fallDuration = gameField.chipFallDuration;
-        fallGravity = gameField.chipFallGravity;
+        fallDuration = cm.chipFallDuration;
+        fallGravity = cm.chipFallGravity;
         distanceToAppear = gameField.cellSize;
         CellPos = cellPos;
         IsVisible = false;
@@ -71,18 +73,6 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
     }
 
     public event Action<Chip> OnDeathCompleted;
-
-    public void Die()
-    {
-        StartCoroutine(AnimateDeath());
-    }
-
-    protected abstract IEnumerator AnimateDeath();
-
-    protected void NotifyDeathCompleted()
-    { 
-        OnDeathCompleted?.Invoke(this);
-    }
 
     public void OnPointerDown(PointerEventData eventData)
     {
@@ -186,5 +176,17 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
         }
 
         IsVisible = true;
+    }
+
+    public void Die()
+    {
+        StartCoroutine(AnimateDeath());
+    }
+
+    protected abstract IEnumerator AnimateDeath();
+
+    protected void NotifyDeathCompleted()
+    {
+        OnDeathCompleted?.Invoke(this);
     }
 }

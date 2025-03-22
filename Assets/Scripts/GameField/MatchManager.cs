@@ -9,11 +9,11 @@ public class MatchManager : MonoBehaviour, IInitializable
     static int fieldWidth;
     static int fieldHeight;
 
-    // field bounds
+    // constant field bounds to search for mathes
     static Vector2Int fieldBottomLeft;
     static Vector2Int fieldTopRight;
 
-    // current region bounds
+    // current bounds region to search for mathes
     Vector2Int bottomLeft;
     Vector2Int topRight;
 
@@ -54,7 +54,7 @@ public class MatchManager : MonoBehaviour, IInitializable
         topRight = fieldTopRight;
     }
 
-    // region to search matches around 2 swapped cells
+    // set search region for matches only around 2 swapped cells
     void SetSwapEffectZone(SwapOperation operation)
     {
         Vector2Int cell1 = operation.draggedChip.CellPos;
