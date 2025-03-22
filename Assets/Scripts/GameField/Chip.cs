@@ -21,7 +21,7 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
     protected Vector3 startDragPos;
     protected SpriteRenderer sr;
     protected GameField gameField;
-    protected CollapseManager collapseManager;
+    protected CollapseHandler collapseManager;
 
     public ChipColor Color;
     public Vector2Int CellPos { get; set; }
@@ -55,7 +55,7 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
     public event Action OnChipLanded;
 
 
-    public virtual void Init(GameField gf, CollapseManager cm, Vector2Int cellPos)
+    public virtual void Init(GameField gf, CollapseHandler cm, Vector2Int cellPos)
     {
         gameField = gf;
         collapseManager = cm;
@@ -128,7 +128,7 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
                 }
             }
 
-            gameField.swapManager.Swap(this, direction, false);
+            gameField.swapHandler.Swap(this, direction, false);
         }
     }
 

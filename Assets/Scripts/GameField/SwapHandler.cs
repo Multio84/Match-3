@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections;
 
 
-public class SwapManager : MonoBehaviour
+public class SwapHandler : MonoBehaviour
 {
     GameField gameField;
 

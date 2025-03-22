@@ -7,9 +7,9 @@ public class GameBootstraper : MonoBehaviour
     [SerializeField] GameProcessor processor;
     [SerializeField] GameField gameField;
     [SerializeField] LevelGenerator levelGenerator;
-    [SerializeField] MatchManager matchManager;
-    [SerializeField] SwapManager swapManager;
-    [SerializeField] CollapseManager collapseManager;
+    [SerializeField] MatchFinder matchFinder;
+    [SerializeField] SwapHandler swapHandler;
+    [SerializeField] CollapseHandler collapseHandler;
     IInitializable[] initializables;
 
 
@@ -26,19 +26,19 @@ public class GameBootstraper : MonoBehaviour
         if (processor == null ||
             gameField == null ||
             levelGenerator == null ||
-            matchManager == null ||
-            swapManager == null ||
-            collapseManager == null)
+            matchFinder == null ||
+            swapHandler == null ||
+            collapseHandler == null)
         {
             Debug.LogError("GameBootstrapper: Не установлены ссылки в инспекторе!");
             return;
         }
 
-        gameField.Setup(matchManager, swapManager, collapseManager);
-        levelGenerator.Setup(gameField, matchManager, collapseManager);
-        matchManager.Setup(gameField);
-        swapManager.Setup(gameField);
-        collapseManager.Setup(gameField,levelGenerator,matchManager);
+        gameField.Setup(matchFinder, swapHandler, collapseHandler);
+        levelGenerator.Setup(gameField, matchFinder, collapseHandler);
+        matchFinder.Setup(gameField);
+        swapHandler.Setup(gameField);
+        collapseHandler.Setup(gameField,levelGenerator,matchFinder);
 
         processor.Setup(levelGenerator);
     }
@@ -48,7 +48,7 @@ public class GameBootstraper : MonoBehaviour
         initializables = new IInitializable[]
         {
             gameField,
-            matchManager,
+            matchFinder,
         };
 
         foreach (var initializable in initializables)

@@ -151,9 +151,9 @@ MonoBehaviour:
   processor: {fileID: 1631335321}
   gameField: {fileID: 442388760}
   levelGenerator: {fileID: 1399788286}
-  matchManager: {fileID: 1762809759}
-  swapManager: {fileID: 225914032}
-  collapseManager: {fileID: 615938986}
+  matchFinder: {fileID: 1762809759}
+  swapHandler: {fileID: 225914032}
+  collapseHandler: {fileID: 615938986}
 --- !u!4 &54237058
 Transform:
   m_ObjectHideFlags: 0
@@ -180,7 +180,7 @@ GameObject:
   - component: {fileID: 225914033}
   - component: {fileID: 225914032}
   m_Layer: 0
-  m_Name: SwapManager
+  m_Name: SwapHandler
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -243,7 +243,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a64dbe4fdf03411488376842f2236ce1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  swapManager: {fileID: 0}
+  swapHandler: {fileID: 0}
   grid: {fileID: 442388762}
   width: 7
   height: 10
@@ -402,7 +402,7 @@ GameObject:
   - component: {fileID: 615938985}
   - component: {fileID: 615938986}
   m_Layer: 0
-  m_Name: CollapseManager
+  m_Name: CollapseHandler
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -432,7 +432,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 615938984}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9ec2585b48056d24b88944e90755bb9d, type: 3}
+  m_Script: {fileID: 11500000, guid: 01f0054febead83468e7fdbe1e427aff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   chipFallDuration: 0.4
@@ -737,7 +737,7 @@ GameObject:
   - component: {fileID: 1762809760}
   - component: {fileID: 1762809759}
   m_Layer: 0
-  m_Name: MatchManager
+  m_Name: MatchFinder
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

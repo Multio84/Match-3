@@ -5,10 +5,9 @@ using UnityEngine;
 
 public class GameField : MonoBehaviour, IInitializable
 {
-    LevelGenerator levelGenerator;
-    MatchManager matchManager;
-    [HideInInspector] public SwapManager swapManager;
-    CollapseManager collapseManager;
+    MatchFinder matchFinder;
+    [HideInInspector] public SwapHandler swapHandler;
+    CollapseHandler collapseHandler;
 
     [Header("Grid Properties")]
     public Grid grid;
@@ -26,11 +25,11 @@ public class GameField : MonoBehaviour, IInitializable
     int chipsToDelete = 0;  // number of chips, going to be deleted in current iteration
 
 
-    public void Setup(MatchManager mm, SwapManager sm, CollapseManager cm)
+    public void Setup(MatchFinder mf, SwapHandler sh, CollapseHandler ch)
     {
-        matchManager = mm;
-        swapManager = sm;
-        collapseManager = cm;
+        matchFinder = mf;
+        swapHandler = sh;
+        collapseHandler = ch;
     }
 
     public void Init()
@@ -100,7 +99,7 @@ public class GameField : MonoBehaviour, IInitializable
             return;
         }
 
-        if (matchManager.FindMatches(operation))
+        if (matchFinder.FindMatches(operation))
         {
             operation.Stop();
             ClearMatches();
@@ -108,7 +107,7 @@ public class GameField : MonoBehaviour, IInitializable
         else
         {
             // reverse swap: previously swapped chip becomes the "dragged" one
-            swapManager.Swap(operation.swappedChip, operation.direction, true);
+            swapHandler.Swap(operation.swappedChip, operation.direction, true);
         }
     }
 
@@ -126,7 +125,7 @@ public class GameField : MonoBehaviour, IInitializable
             }
         }
         //Debug.Log($"Chips sent to die: {chipsToDelete}");
-        collapseManager.totalChipsToFallCount = chipsToDelete;
+        collapseHandler.totalChipsToFallCount = chipsToDelete;
     }
 
     void HandleChipDeath(Chip chip)
@@ -160,13 +159,13 @@ public class GameField : MonoBehaviour, IInitializable
         if (chip is null) return;
 
         chip.OnDeathCompleted -= HandleChipDeath;
-        chip.OnChipLanded -= collapseManager.HandleChipLanded;
+        chip.OnChipLanded -= collapseHandler.HandleChipLanded;
     }
 
     void HandleMatchesCleared()
     {
         //Debug.Log("Matches cleared. Starting Collapse.");
-        collapseManager.CollapseChips();
+        collapseHandler.CollapseChips();
     }
 
     public Vector2Int GetCellGridPos(Vector3 worldPos)

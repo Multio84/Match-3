@@ -1,12 +1,11 @@
-using System.Runtime.CompilerServices;
 using UnityEngine;
 
 
 public class LevelGenerator : MonoBehaviour
 {
     GameField gf;
-    MatchManager matchManager;
-    CollapseManager collapseManager;
+    MatchFinder matchManager;
+    CollapseHandler collapseHandler;
 
     [SerializeField] GameObject cellPrefab;
     [SerializeField] GameObject[] chipsPrefabs;
@@ -14,11 +13,11 @@ public class LevelGenerator : MonoBehaviour
 
 
 
-    public void Setup(GameField gf, MatchManager mm, CollapseManager cm)
+    public void Setup(GameField gf, MatchFinder mm, CollapseHandler ch)
     {
         this.gf = gf;
         matchManager = mm;
-        collapseManager = cm;
+        collapseHandler = ch;
     }
 
     public void GenerateLevel()
@@ -69,7 +68,7 @@ public class LevelGenerator : MonoBehaviour
         GameObject chipObj = Instantiate(chipsPrefabs[randomIndex], gf.GetCellWorldPos(cellPos), Quaternion.identity);
         chipObj.transform.SetParent(transform);
         Chip chip = chipObj.GetComponent<Chip>();
-        chip.Init(gf, collapseManager, cellPos);
+        chip.Init(gf, collapseHandler, cellPos);
         //chip.name = "Chip_" + cellPos.x.ToString() + "_" + cellPos.y.ToString();
 
         return chip;

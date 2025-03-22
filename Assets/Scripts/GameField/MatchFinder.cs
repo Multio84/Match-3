@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
-public class MatchManager : MonoBehaviour, IInitializable
+public class MatchFinder : MonoBehaviour, IInitializable
 {
     GameField gameField;
 
