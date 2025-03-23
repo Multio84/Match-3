@@ -3,26 +3,21 @@ using UnityEngine;
 
 public class GameProcessor : MonoBehaviour
 {
-    LevelGenerator levelGenerator;
+    GameplayConductor gameplayConductor;
 
 
-    public void Setup(LevelGenerator lg)
+    public void Setup(GameplayConductor gc)
     {
-        if (lg == null)
-        {
-            Debug.LogError("GameProcessor: LevelGenerator is null.");
-        }
-
-        levelGenerator = lg;
+        gameplayConductor = gc;
     }
 
     private void Awake()
     {
-        StartGame();
+        StartApp();
     }
 
-    void StartGame()
+    void StartApp()
     {
-        levelGenerator.GenerateLevel();
+        gameplayConductor.StartGame();
     }
 }

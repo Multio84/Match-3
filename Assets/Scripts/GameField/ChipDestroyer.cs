@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 
@@ -8,6 +9,7 @@ public class ChipDestroyer : MonoBehaviour
 
     int chipsToDelete = 0;  // number of chips, going to be deleted in current iteration
 
+    public Action OnMatchesCleared;
 
 
     public void Setup(GameField gf, CollapseHandler ch)
@@ -47,10 +49,6 @@ public class ChipDestroyer : MonoBehaviour
             gf.chips[chip.CellPos.x, chip.CellPos.y] = null;
             //Debug.Log($"Chip_{chip} removed successfully.");
         }
-        else
-        {
-            //Debug.LogWarning($"Mismatch or null reference for Chip_{chip.CellPos}");
-        }
 
         UnsubscribeFromChip(chip);
 
@@ -79,7 +77,6 @@ public class ChipDestroyer : MonoBehaviour
 
     void HandleMatchesCleared()
     {
-        //Debug.Log("Matches cleared. Starting Collapse.");
-        collapseHandler.CollapseChips();
+        OnMatchesCleared?.Invoke();
     }
 }

@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System;
 
 
 public class CollapseHandler : MonoBehaviour
@@ -16,7 +17,9 @@ public class CollapseHandler : MonoBehaviour
     const int ChipsFallDelay = 10;  // miliseconds to await before next set of chips falling
     // chip collapse in rows: one row after another.
     // This is total count of chips of all rows to collapse until current collapse is done
-    public int totalChipsToFallCount = 0;  
+    public int totalChipsToFallCount = 0;
+
+    public Action OnCollapseCompleted;
 
 
     public void Setup(GameField gf, LevelGenerator lg, MatchFinder mf, ChipDestroyer cd)
@@ -136,7 +139,6 @@ public class CollapseHandler : MonoBehaviour
 
     void HandleCollapseComplete()
     {
-        if (matchFinder.FindMatches(null))
-            chipDestroyer.ClearMatches();
+        OnCollapseCompleted?.Invoke();
     }
 }

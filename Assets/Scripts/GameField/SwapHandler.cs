@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using System;
 
 
 public class SwapHandler : MonoBehaviour
@@ -8,6 +9,8 @@ public class SwapHandler : MonoBehaviour
 
     const float ChipSwapDuration = 0.2f;    // chips swap animation time duration in seconds
     const float ReverseSwapDelay = 0.15f;   // seconds before automatic reverse swap, when manual swap didn't lead to match
+
+    public Action<SwapOperation> OnSwapCompleted;
 
 
     public void Setup(GameField gf)
@@ -66,6 +69,6 @@ public class SwapHandler : MonoBehaviour
 
         yield return new WaitForSeconds(ReverseSwapDelay);
 
-        gameField.UpdateSwappedChips(operation);
+        OnSwapCompleted?.Invoke(operation);
     }
 }

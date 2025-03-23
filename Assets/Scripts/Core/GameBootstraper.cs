@@ -4,7 +4,8 @@ using UnityEngine;
 [DefaultExecutionOrder(-1000)]
 public class GameBootstraper : MonoBehaviour
 {
-    [SerializeField] GameProcessor processor;
+    [SerializeField] GameProcessor gameProcessor;
+    [SerializeField] GameplayConductor gameplayConductor;
     [SerializeField] GameField gameField;
     [SerializeField] LevelGenerator levelGenerator;
     [SerializeField] MatchFinder matchFinder;
@@ -24,7 +25,8 @@ public class GameBootstraper : MonoBehaviour
 
     void Setup()
     {
-        if (processor == null ||
+        if (gameProcessor == null ||
+            gameplayConductor == null ||
             gameField == null ||
             levelGenerator == null ||
             matchFinder == null ||
@@ -43,7 +45,8 @@ public class GameBootstraper : MonoBehaviour
         collapseHandler.Setup(gameField, levelGenerator, matchFinder, chipDestroyer);
         chipDestroyer.Setup(gameField, collapseHandler);
 
-        processor.Setup(levelGenerator);
+        gameProcessor.Setup(gameplayConductor);
+        gameplayConductor.Setup(gameField, levelGenerator, matchFinder, swapHandler, collapseHandler, chipDestroyer);
     }
 
     void Init()
@@ -51,7 +54,8 @@ public class GameBootstraper : MonoBehaviour
         initializables = new IInitializable[]
         {
             gameField,
-            matchFinder
+            matchFinder,
+            gameplayConductor
         };
 
         foreach (var initializable in initializables)

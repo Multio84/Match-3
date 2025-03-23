@@ -13,17 +13,13 @@ public class GameField : MonoBehaviour, IInitializable
     public Grid grid;
     [Range(5, 7)] public int width = 7;
     [Range(5, 14)] public int height = 14;
-
     public Chip[,] chips;
     public float cellSize;
 
     [Header("Chip Properties")]
     public float chipDragThreshold;   // dragged distance after which chip moves by itself
-
     public float chipDeathDuration = 2f;  // seconds of chip death animation du
     
-
-
 
     public void Setup(MatchFinder mf, SwapHandler sh, CollapseHandler ch, ChipDestroyer cd)
     {
@@ -111,10 +107,6 @@ public class GameField : MonoBehaviour, IInitializable
             swapHandler.Swap(operation.swappedChip, operation.direction, true);
         }
     }
-
-   
-
-
 
     public Vector2Int GetCellGridPos(Vector3 worldPos)
     {

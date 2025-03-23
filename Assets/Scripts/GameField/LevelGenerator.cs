@@ -1,25 +1,23 @@
+using System;
 using UnityEngine;
 
 
 public class LevelGenerator : MonoBehaviour
 {
     GameField gf;
-    MatchFinder matchManager;
     CollapseHandler collapseHandler;
-    ChipDestroyer chipDestroyer;
 
     [SerializeField] GameObject cellPrefab;
     [SerializeField] GameObject[] chipsPrefabs;
     [SerializeField] GameObject cellsRoot;
 
+    public Action OnLevelGenerated;
 
 
     public void Setup(GameField gf, MatchFinder mm, CollapseHandler ch, ChipDestroyer cd)
     {
         this.gf = gf;
-        matchManager = mm;
         collapseHandler = ch;
-        chipDestroyer = cd;
     }
 
     public void GenerateLevel()
@@ -27,7 +25,6 @@ public class LevelGenerator : MonoBehaviour
         GenerateFieldBack();
         GenerateGameField();
     }
-
 
     void GenerateFieldBack()
     {
@@ -61,7 +58,8 @@ public class LevelGenerator : MonoBehaviour
             }
         }
 
-        if (matchManager.FindMatches(null)) chipDestroyer.ClearMatches();
+        // generation done
+        OnLevelGenerated?.Invoke();
     }
 
     public Chip SpawnChip(Vector2Int cellPos)
@@ -69,6 +67,7 @@ public class LevelGenerator : MonoBehaviour
         int randomIndex = UnityEngine.Random.Range(0, chipsPrefabs.Length);
         GameObject chipObj = Instantiate(chipsPrefabs[randomIndex], gf.GetCellWorldPos(cellPos), Quaternion.identity);
         chipObj.transform.SetParent(transform);
+
         Chip chip = chipObj.GetComponent<Chip>();
         chip.Init(gf, collapseHandler, cellPos);
         //chip.name = "Chip_" + cellPos.x.ToString() + "_" + cellPos.y.ToString();
