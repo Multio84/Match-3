@@ -1,5 +1,4 @@
 using System;
-
 using UnityEngine;
 
 
@@ -8,6 +7,7 @@ public class GameField : MonoBehaviour, IInitializable
     MatchFinder matchFinder;
     [HideInInspector] public SwapHandler swapHandler;
     CollapseHandler collapseHandler;
+    ChipDestroyer chipDestroyer;
 
     [Header("Grid Properties")]
     public Grid grid;
@@ -22,14 +22,15 @@ public class GameField : MonoBehaviour, IInitializable
 
     public float chipDeathDuration = 2f;  // seconds of chip death animation du
     
-    int chipsToDelete = 0;  // number of chips, going to be deleted in current iteration
 
 
-    public void Setup(MatchFinder mf, SwapHandler sh, CollapseHandler ch)
+
+    public void Setup(MatchFinder mf, SwapHandler sh, CollapseHandler ch, ChipDestroyer cd)
     {
         matchFinder = mf;
         swapHandler = sh;
         collapseHandler = ch;
+        chipDestroyer = cd;
     }
 
     public void Init()
@@ -102,7 +103,7 @@ public class GameField : MonoBehaviour, IInitializable
         if (matchFinder.FindMatches(operation))
         {
             operation.Stop();
-            ClearMatches();
+            chipDestroyer.ClearMatches();
         }
         else
         {
@@ -111,62 +112,9 @@ public class GameField : MonoBehaviour, IInitializable
         }
     }
 
-    // destroy the matched chips
-    public void ClearMatches()
-    {
-        chipsToDelete = 0;
-        foreach (var chip in chips) {
-            if (chip is not null && chip.IsMatched) {
-                chip.OnDeathCompleted -= HandleChipDeath;   // to exclude double subscription
-                chip.OnDeathCompleted += HandleChipDeath;
+   
 
-                chipsToDelete++;
-                chip.Die();
-            }
-        }
-        //Debug.Log($"Chips sent to die: {chipsToDelete}");
-        collapseHandler.totalChipsToFallCount = chipsToDelete;
-    }
 
-    void HandleChipDeath(Chip chip)
-    {
-        if (chips[chip.CellPos.x, chip.CellPos.y] == chip) {
-            chips[chip.CellPos.x, chip.CellPos.y] = null;
-            //Debug.Log($"Chip_{chip} removed successfully.");
-        }
-        else {
-            //Debug.LogWarning($"Mismatch or null reference for Chip_{chip.CellPos}");
-        }
-
-        UnsubscribeFromChip(chip);
-
-        if (chip is null || chip.gameObject is null) {
-            Debug.LogWarning($"Trying to destroy non-existing chip.");
-            return;
-        }
-
-        Destroy(chip.gameObject);
-        chip = null;
-        chipsToDelete--;
-        //Debug.Log($"Chips left to die: {chipsToDelete}");
-
-        if (chipsToDelete <= 0) 
-            HandleMatchesCleared();
-    }
-
-    void UnsubscribeFromChip(Chip chip)
-    {
-        if (chip is null) return;
-
-        chip.OnDeathCompleted -= HandleChipDeath;
-        chip.OnChipLanded -= collapseHandler.HandleChipLanded;
-    }
-
-    void HandleMatchesCleared()
-    {
-        //Debug.Log("Matches cleared. Starting Collapse.");
-        collapseHandler.CollapseChips();
-    }
 
     public Vector2Int GetCellGridPos(Vector3 worldPos)
     {

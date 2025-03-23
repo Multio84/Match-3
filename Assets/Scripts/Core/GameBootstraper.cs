@@ -10,6 +10,7 @@ public class GameBootstraper : MonoBehaviour
     [SerializeField] MatchFinder matchFinder;
     [SerializeField] SwapHandler swapHandler;
     [SerializeField] CollapseHandler collapseHandler;
+    [SerializeField] ChipDestroyer chipDestroyer;
     IInitializable[] initializables;
 
 
@@ -28,17 +29,19 @@ public class GameBootstraper : MonoBehaviour
             levelGenerator == null ||
             matchFinder == null ||
             swapHandler == null ||
-            collapseHandler == null)
+            collapseHandler == null ||
+            chipDestroyer == null)
         {
             Debug.LogError("GameBootstrapper: Не установлены ссылки в инспекторе!");
             return;
         }
 
-        gameField.Setup(matchFinder, swapHandler, collapseHandler);
-        levelGenerator.Setup(gameField, matchFinder, collapseHandler);
+        gameField.Setup(matchFinder, swapHandler, collapseHandler, chipDestroyer);
+        levelGenerator.Setup(gameField, matchFinder, collapseHandler, chipDestroyer);
         matchFinder.Setup(gameField);
         swapHandler.Setup(gameField);
-        collapseHandler.Setup(gameField,levelGenerator,matchFinder);
+        collapseHandler.Setup(gameField, levelGenerator, matchFinder, chipDestroyer);
+        chipDestroyer.Setup(gameField, collapseHandler);
 
         processor.Setup(levelGenerator);
     }
@@ -48,7 +51,7 @@ public class GameBootstraper : MonoBehaviour
         initializables = new IInitializable[]
         {
             gameField,
-            matchFinder,
+            matchFinder
         };
 
         foreach (var initializable in initializables)

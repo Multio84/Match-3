@@ -9,6 +9,7 @@ public class CollapseHandler : MonoBehaviour
     GameField gf;
     LevelGenerator levelGenerator;
     MatchFinder matchFinder;
+    ChipDestroyer chipDestroyer;
 
     public float chipFallDuration = 0.4f;   // duration of falling chip animation
     public float chipFallGravity = 2;   // gravity for falling chip, that is falling speed factor
@@ -18,11 +19,12 @@ public class CollapseHandler : MonoBehaviour
     public int totalChipsToFallCount = 0;  
 
 
-    public void Setup(GameField gf, LevelGenerator lg, MatchFinder mf)
+    public void Setup(GameField gf, LevelGenerator lg, MatchFinder mf, ChipDestroyer cd)
     {
         this.gf = gf;
         levelGenerator = lg;
         matchFinder = mf;
+        chipDestroyer = cd;
     }
 
     public async void CollapseChips()
@@ -128,13 +130,13 @@ public class CollapseHandler : MonoBehaviour
     public void HandleChipLanded()
     {
         totalChipsToFallCount--;
-        if (totalChipsToFallCount == 0)
+        if (totalChipsToFallCount <= 0)
             HandleCollapseComplete();
     }
 
     void HandleCollapseComplete()
     {
         if (matchFinder.FindMatches(null))
-            gf.ClearMatches();
+            chipDestroyer.ClearMatches();
     }
 }

@@ -6,6 +6,7 @@ public class LevelGenerator : MonoBehaviour
     GameField gf;
     MatchFinder matchManager;
     CollapseHandler collapseHandler;
+    ChipDestroyer chipDestroyer;
 
     [SerializeField] GameObject cellPrefab;
     [SerializeField] GameObject[] chipsPrefabs;
@@ -13,11 +14,12 @@ public class LevelGenerator : MonoBehaviour
 
 
 
-    public void Setup(GameField gf, MatchFinder mm, CollapseHandler ch)
+    public void Setup(GameField gf, MatchFinder mm, CollapseHandler ch, ChipDestroyer cd)
     {
         this.gf = gf;
         matchManager = mm;
         collapseHandler = ch;
+        chipDestroyer = cd;
     }
 
     public void GenerateLevel()
@@ -59,7 +61,7 @@ public class LevelGenerator : MonoBehaviour
             }
         }
 
-        if (matchManager.FindMatches(null)) gf.ClearMatches();
+        if (matchManager.FindMatches(null)) chipDestroyer.ClearMatches();
     }
 
     public Chip SpawnChip(Vector2Int cellPos)
