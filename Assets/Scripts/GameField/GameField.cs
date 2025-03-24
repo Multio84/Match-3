@@ -4,7 +4,41 @@ using System.Linq;
 using UnityEngine;
 
 
-
+/// <summary>
+/// ƒанный класс отвечает за хранение и обработку массива фишек на игровом поле.
+/// 
+/// ќсновные термины и соглашени€ по именованию: 
+/// <list type="bullet">
+///     <item>
+///         <description>
+///         <c>chip</c> - фишка, объект геймпле€.
+///         </description>
+///     </item>
+///     <item>
+///         <description>
+///         <c>board</c> - "доска" - все фишки на игровом поле, хран€щиес€ в одноимЄнном двумерном массиве.
+///         </description>
+///     </item>
+///     <item>
+///         <description>
+///         <c>Sync...</c> - приставка в названии методов, выполн€ющих приведение в соответствие 
+///         положени€ фишек на поле и их индекса в массиве board.
+///         </description>
+///     </item>
+///     <item>
+///         <description>
+///         <c>cell</c> или <c>cellPos</c> - переменные, содержащие позицию клетки в игровом поле,
+///         заданную в координатах сетки. »спользуемые типы: <see cref="Vector2Int"/> или <see cref="Vector3Int"/>.
+///         </description>
+///     </item>
+///     <item>
+///         <description>
+///         <c>worldPos</c> - переменные, содержащие мировую (пространственную) позицию объекта.
+///         »спользуемые типы: <see cref="Vector3"/>.
+///         </description>
+///     </item>
+/// </list>
+/// </summary>
 
 public class GameField : MonoBehaviour, IInitializable
 {
@@ -118,14 +152,16 @@ public class GameField : MonoBehaviour, IInitializable
 
     public bool IsValidChip(int x, int y)
     {
-        if (!IsCellInField(new Vector2Int(x, y)))
+        var cell = new Vector2Int(x, y);
+
+        if (!IsCellInField(cell))
         {
-            //Debug.Log($"Cell ({x}, {y}) is not in field.");
+            //Debug.Log($"Cell {cell} is not in field.");
             return false;
         }
-        if (GetChip(new Vector2Int(x, y)) is null)//chips[x, y] is null)
+        if (GetChip(cell) is null)
         {
-            //Debug.Log($"Cell ({x}, {y}) is null.");
+            //Debug.Log($"Cell {cell} is null.");
             return false;
         }
 
