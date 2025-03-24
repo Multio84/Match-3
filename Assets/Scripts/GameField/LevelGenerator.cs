@@ -14,7 +14,7 @@ public class LevelGenerator : MonoBehaviour
     public Action OnLevelGenerated;
 
 
-    public void Setup(GameField gf, MatchFinder mm, CollapseHandler ch, ChipDestroyer cd)
+    public void Setup(GameField gf, CollapseHandler ch)
     {
         this.gf = gf;
         collapseHandler = ch;
@@ -53,8 +53,8 @@ public class LevelGenerator : MonoBehaviour
                 Vector2Int cellPos = new Vector2Int(x, y);
                 Chip chip = SpawnChip(cellPos);
                 chip.IsVisible = true;
-                if (!gf.SyncChipWithBoard(chip))
-                    Debug.LogWarning("Attempt to swapn a chip outside the GameField: not synchronised");
+                if (!gf.SyncChipWithBoardByItsPos(chip))
+                    Debug.LogWarning("Attempt to spawn a chip outside the GameField: chip wasn't synchronised");
             }
         }
 

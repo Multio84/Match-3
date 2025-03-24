@@ -22,12 +22,12 @@ public class ChipDestroyer : MonoBehaviour
     public void ClearMatches()
     {
         chipsToDelete = 0;
-        if (gf.chips == null || gf.chips.Length == 0)
+        if (gf.IsBoardNullOrEmpty())
         {
             Debug.Log("No chips to delete.");
             return;
         }
-        foreach (var chip in gf.chips)
+        foreach (var chip in gf.BoardEnumerable)
         {
             if (chip is not null && chip.IsMatched)
             {
@@ -44,9 +44,10 @@ public class ChipDestroyer : MonoBehaviour
 
     void HandleChipDeath(Chip chip)
     {
-        if (gf.chips[chip.CellPos.x, chip.CellPos.y] == chip)
+        if (gf.IsChipCellPosActual(chip))//gf.chips[chip.CellPos.x, chip.CellPos.y] == chip)
         {
-            gf.chips[chip.CellPos.x, chip.CellPos.y] = null;
+            gf.SetChip(chip.CellPos, null);
+            //gf.chips[chip.CellPos.x, chip.CellPos.y] = null;
             //Debug.Log($"Chip_{chip} removed successfully.");
         }
 

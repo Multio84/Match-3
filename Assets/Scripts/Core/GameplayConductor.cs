@@ -12,6 +12,7 @@ public class GameplayConductor : MonoBehaviour, IInitializable
 
 
     public void Setup(
+
         GameField gf,
         LevelGenerator lg,
         MatchFinder mf,
@@ -33,12 +34,15 @@ public class GameplayConductor : MonoBehaviour, IInitializable
         levelGenerator.OnLevelGenerated += OnLevelGenerated;
         chipDestroyer.OnMatchesCleared += OnMatchesCleared;
         collapseHandler.OnCollapseCompleted += OnCollapseCompleted;
-        swapHandler.OnSwapCompleted += OnSwapCompleted;
+        swapHandler.OnSwapSuccessful += OnSwapSuccessful;
     }
 
     void OnDisable()
     {
-        
+        levelGenerator.OnLevelGenerated -= OnLevelGenerated;
+        chipDestroyer.OnMatchesCleared -= OnMatchesCleared;
+        collapseHandler.OnCollapseCompleted -= OnCollapseCompleted;
+        swapHandler.OnSwapSuccessful -= OnSwapSuccessful;
     }
 
     public void StartGame()
@@ -63,9 +67,9 @@ public class GameplayConductor : MonoBehaviour, IInitializable
             chipDestroyer.ClearMatches();
     }
 
-    void OnSwapCompleted(SwapOperation operation)
+    void OnSwapSuccessful()
     {
-        gameField.UpdateSwappedChips(operation);
+        chipDestroyer.ClearMatches();
     }
 
 }

@@ -9,25 +9,21 @@ public class CollapseHandler : MonoBehaviour
 {
     GameField gf;
     LevelGenerator levelGenerator;
-    MatchFinder matchFinder;
-    ChipDestroyer chipDestroyer;
 
     public float chipFallDuration = 0.4f;   // duration of falling chip animation
     public float chipFallGravity = 2;   // gravity for falling chip, that is falling speed factor
     const int ChipsFallDelay = 10;  // miliseconds to await before next set of chips falling
-    // chip collapse in rows: one row after another.
-    // This is total count of chips of all rows to collapse until current collapse is done
+    // chips collapse in rows: one row after another.
+    // This is total count of chips in all rows to collapse for current collapse to be completed
     public int totalChipsToFallCount = 0;
 
     public Action OnCollapseCompleted;
 
 
-    public void Setup(GameField gf, LevelGenerator lg, MatchFinder mf, ChipDestroyer cd)
+    public void Setup(GameField gf, LevelGenerator lg)
     {
         this.gf = gf;
         levelGenerator = lg;
-        matchFinder = mf;
-        chipDestroyer = cd;
     }
 
     public async void CollapseChips()
@@ -37,6 +33,11 @@ public class CollapseHandler : MonoBehaviour
 
         while (iteration < maxIterations)
         {
+            if (iteration > gf.height)
+            {
+                Debug.LogWarning("CollapseHandler: Attempt to drop chips more, than level's height.");
+            }
+
             Dictionary<Vector2Int, Chip> chipsToFall = CollectChipsToFall();
             if (chipsToFall.Count == 0)
             {
@@ -44,7 +45,7 @@ public class CollapseHandler : MonoBehaviour
                 break;
             }
 
-            SyncFallingChipsWithBoard(chipsToFall);
+            gf.SyncFallingChipsWithBoard(chipsToFall);
             StartCoroutine(DropChips(chipsToFall));
             await Task.Delay(ChipsFallDelay);
 
@@ -63,7 +64,8 @@ public class CollapseHandler : MonoBehaviour
 
             for (int y = 0; y < gf.height; y++)
             {
-                if (gf.chips[x, y] is null)
+                Chip currentChip = gf.GetChip(new Vector2Int(x, y));
+                if (currentChip is null)
                 {
                     if (bottomCell is null)
                     {
@@ -82,38 +84,14 @@ public class CollapseHandler : MonoBehaviour
                 else if (bottomCell.HasValue)
                 {
                     // save old chip to fall
-                    if (!chipsToFall.TryAdd(bottomCell.Value, gf.chips[x, y]))
-                        Debug.LogError($"Duplicate target cell {bottomCell.Value} while adding existing chip {gf.chips[x, y]}");
+                    if (!chipsToFall.TryAdd(bottomCell.Value, currentChip))
+                        Debug.LogError($"Duplicate target cell {bottomCell.Value} while adding existing chip {currentChip}");
                     break;
                 }
             }
         }
 
         return chipsToFall;
-    }
-
-    // changes chip's position in array: moves it from start chip's place to the cellPos
-    void SyncFallingChipsWithBoard(Dictionary<Vector2Int, Chip> chipsToFall)
-    {
-        foreach (var entry in chipsToFall)
-        {
-            Vector2Int chipCell = entry.Value.CellPos;
-            Vector2Int targetCell = entry.Key;
-
-            if (!gf.IsCellInField(targetCell))
-            {
-                Debug.LogError("Sync field while collapsing: target cell for falling chip is outside the field.");
-                break;
-            }
-
-            // chip created outside of the field is not in chips array yet,
-            // so it doesn't have to be nullified
-            if (gf.IsCellInField(chipCell))
-                gf.chips[chipCell.x, chipCell.y] = null;
-
-            gf.chips[targetCell.x, targetCell.y] = entry.Value;
-            gf.chips[targetCell.x, targetCell.y].CellPos = targetCell;
-        }
     }
 
     IEnumerator DropChips(Dictionary<Vector2Int, Chip> chipsToFall)

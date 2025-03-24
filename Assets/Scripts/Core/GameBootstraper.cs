@@ -38,11 +38,11 @@ public class GameBootstraper : MonoBehaviour
             return;
         }
 
-        gameField.Setup(matchFinder, swapHandler, collapseHandler, chipDestroyer);
-        levelGenerator.Setup(gameField, matchFinder, collapseHandler, chipDestroyer);
+        gameField.Setup(swapHandler);
+        levelGenerator.Setup(gameField, collapseHandler);
         matchFinder.Setup(gameField);
-        swapHandler.Setup(gameField);
-        collapseHandler.Setup(gameField, levelGenerator, matchFinder, chipDestroyer);
+        swapHandler.Setup(gameField, matchFinder);
+        collapseHandler.Setup(gameField, levelGenerator);
         chipDestroyer.Setup(gameField, collapseHandler);
 
         gameProcessor.Setup(gameplayConductor);

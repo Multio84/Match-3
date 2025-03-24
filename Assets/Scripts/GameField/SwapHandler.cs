@@ -5,17 +5,19 @@ using System;
 
 public class SwapHandler : MonoBehaviour
 {
-    GameField gameField;
+    GameField gf;
+    MatchFinder matchFinder;
 
     const float ChipSwapDuration = 0.2f;    // chips swap animation time duration in seconds
     const float ReverseSwapDelay = 0.15f;   // seconds before automatic reverse swap, when manual swap didn't lead to match
 
-    public Action<SwapOperation> OnSwapCompleted;
+    public Action OnSwapSuccessful;
 
 
-    public void Setup(GameField gf)
+    public void Setup(GameField gf, MatchFinder mf)
     {
-        gameField = gf;
+        this.gf = gf;
+        matchFinder = mf;
     }
 
     public void Swap(Chip chip, Vector2Int direction, bool isReverse)
@@ -32,7 +34,7 @@ public class SwapHandler : MonoBehaviour
     SwapOperation GetSwapOperation(Chip chip, Vector2Int direction, bool isReverse)
     {
         Vector2Int targetCell = chip.CellPos + direction;   // find adjacent chip to swap with this
-        if (!gameField.IsValidChip(targetCell.x, targetCell.y))
+        if (!gf.IsValidChip(targetCell.x, targetCell.y))
         {
             Debug.Log("Attempt to make swap with invalid chip.");
             return null;
@@ -40,7 +42,7 @@ public class SwapHandler : MonoBehaviour
 
         return new SwapOperation(
             chip,
-            gameField.GetChip(targetCell),
+            gf.GetChip(targetCell),
             direction,
             isReverse
         );
@@ -69,6 +71,30 @@ public class SwapHandler : MonoBehaviour
 
         yield return new WaitForSeconds(ReverseSwapDelay);
 
-        OnSwapCompleted?.Invoke(operation);
+
+        HandleSwap(operation);
+    }
+
+    void HandleSwap(SwapOperation operation)
+    {
+        gf.UpdateSwappedChips(operation);
+
+        if (operation.isReverse)
+        {
+            operation.Stop();
+            return;
+        }
+
+        if (matchFinder.FindMatches(operation))
+        {
+            operation.Stop();
+
+            OnSwapSuccessful?.Invoke();
+        }
+        else
+        {
+            // reverse swap: previously swapped chip becomes the "dragged" one
+            Swap(operation.swappedChip, operation.direction, true);
+        }
     }
 }

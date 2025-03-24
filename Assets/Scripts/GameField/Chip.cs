@@ -41,12 +41,12 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
                 new Color(color.r, color.g, color.b, 0);
         }
     }
-    public bool IsSwapping { get; set; }
+    public bool IsSwapping { get; set; } // if chip is in process of swap
     public bool IsInAction { get; set; } // if the chip is in any action, it can't be deleted in match
     public bool IsMatched { get; set; }  // if was marked as a part of some match
 
     protected bool isDragging = false;
-    protected float dragThreshold;  // min sidtance for a chip to move, after which the chip starts swap with it's neighbour
+    protected float dragThreshold;  // min sidtance for a chip to move, after which the chip starts swapping with it's neighbour
     protected float deathDuration;
     protected float fallDuration;
     protected float fallGravity;

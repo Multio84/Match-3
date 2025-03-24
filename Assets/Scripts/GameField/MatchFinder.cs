@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class MatchFinder : MonoBehaviour, IInitializable
 {
-    GameField gameField;
+    GameField gf;
 
     static int fieldWidth;
     static int fieldHeight;
@@ -25,13 +25,13 @@ public class MatchFinder : MonoBehaviour, IInitializable
 
     public void Setup(GameField gf)
     {
-        gameField = gf;
+        this.gf = gf;
     }
 
     public void Init()
     {
-        fieldWidth = gameField.width;
-        fieldHeight = gameField.height;
+        fieldWidth = gf.width;
+        fieldHeight = gf.height;
         fieldBottomLeft = Vector2Int.zero;
         fieldTopRight = new Vector2Int(fieldWidth - 1, fieldHeight - 1);
     }
@@ -95,10 +95,10 @@ public class MatchFinder : MonoBehaviour, IInitializable
             for (int x = min.x; x <= max.x; x++)
             {
                 // TODO: when all common algorythm is done, check if it's really needed:
-                if (!gameField.IsValidChip(x, y)) continue;
+                if (!gf.IsValidChip(x, y)) continue;
 
                 // save the first chip without check
-                Chip currentChip = gameField.chips[x, y];
+                Chip currentChip = gf.GetChip(new Vector2Int(x, y));
                 chipsToCheck.Clear();
                 chipsToCheck.Add(currentChip);
 
@@ -107,8 +107,8 @@ public class MatchFinder : MonoBehaviour, IInitializable
                     int checkX = x + i * direction.x;
                     int checkY = y + i * direction.y;
 
-                    if (!gameField.IsValidChip(checkX, checkY)) break;
-                    Chip nextChip = gameField.chips[checkX, checkY];
+                    if (!gf.IsValidChip(checkX, checkY)) break;
+                    Chip nextChip = gf.GetChip(new Vector2Int(checkX, checkY));
 
                     if (currentChip.Color != nextChip.Color) break;
                     chipsToCheck.Add(nextChip);
@@ -116,7 +116,8 @@ public class MatchFinder : MonoBehaviour, IInitializable
 
                 if (chipsToCheck.Count >= MinMatchSize)
                 {
-                    foreach (Chip chip in chipsToCheck) chip.IsMatched = true;
+                    foreach (Chip chip in chipsToCheck)
+                        chip.IsMatched = true;
                     matchesFound = true;
                 }
             }
