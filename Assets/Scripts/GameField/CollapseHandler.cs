@@ -13,6 +13,7 @@ public class CollapseHandler : MonoBehaviour
     public float chipFallDuration = 0.4f;   // duration of falling chip animation
     public float chipFallGravity = 2;   // gravity for falling chip, that is falling speed factor
     const int ChipsFallDelay = 10;  // miliseconds to await before next set of chips falling
+
     // chips collapse in rows: one row after another.
     // This is total count of chips in all rows to collapse for current collapse to be completed
     public int totalChipsToFallCount = 0;

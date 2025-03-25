@@ -44,17 +44,17 @@ public class GameField : MonoBehaviour, IInitializable
 {
     [HideInInspector] public SwapHandler swapHandler;
 
-    [Header("Grid Properties")]
-    public Grid grid;
+    [Header("Field Settings")]
+    Grid grid;
     [Range(5, 7)] public int width = 7;
     [Range(5, 14)] public int height = 14;
     Chip[,] board;
     public IEnumerable<Chip> BoardEnumerable => board.Cast<Chip>(); // property for iterating chips outside GameField
     public float cellSize;
 
-    [Header("Chip Properties")]
+    [Header("Chip Settings")]
     public float chipDragThreshold;   // dragged distance after which chip moves by itself
-    public float chipDeathDuration = 2f;  // seconds of chip death animation du
+    public float chipDeathDuration = 2f;  // seconds of chip death animation
     
 
     public void Setup(SwapHandler sh)
@@ -64,6 +64,7 @@ public class GameField : MonoBehaviour, IInitializable
 
     public void Init()
     {
+        grid = GetComponent<Grid>();
         cellSize = grid.cellSize.x;
         chipDragThreshold = cellSize / 5;
         board = new Chip[width, height];
