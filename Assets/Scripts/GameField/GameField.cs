@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -40,33 +39,32 @@ using UnityEngine;
 /// </list>
 /// </summary>
 
-public class GameField : MonoBehaviour, IInitializable
+public class GameField : MonoBehaviour, IPreloader
 {
-    [HideInInspector] public SwapHandler swapHandler;
+    GameSettings settings;
 
-    [Header("Field Settings")]
+    [Header("Field settings")]
     Grid grid;
-    [Range(5, 7)] public int width = 7;
-    [Range(5, 14)] public int height = 14;
+    public float cellSize;
+    public int width;
+    public int height;
     Chip[,] board;
     public IEnumerable<Chip> BoardEnumerable => board.Cast<Chip>(); // property for iterating chips outside GameField
-    public float cellSize;
-
-    [Header("Chip Settings")]
-    public float chipDragThreshold;   // dragged distance after which chip moves by itself
-    public float chipDeathDuration = 2f;  // seconds of chip death animation
     
 
-    public void Setup(SwapHandler sh)
+    public void Setup(SwapHandler sh, GameSettings settings)
     {
-        swapHandler = sh;
+        this.settings = settings;
     }
 
-    public void Init()
+    public void Preload()
     {
+        cellSize = settings.cellSize;
+        width = settings.width;
+        height = settings.height;
+
         grid = GetComponent<Grid>();
-        cellSize = grid.cellSize.x;
-        chipDragThreshold = cellSize / 5;
+        grid.cellSize = new Vector3(cellSize, cellSize, 0);
         board = new Chip[width, height];
 
         SetGameFieldPos();

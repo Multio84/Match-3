@@ -13,13 +13,12 @@ MonoBehaviour:
   m_Name: GameSettings
   m_EditorClassIdentifier: 
   width: 7
-  height: 14
+  height: 10
   cellSize: 140
   chipFallDuration: 0.4
   chipFallGravity: 2
-  chipsFallDelay: 10
-  chipDragThreshold: 0
-  chipDeathDuration: 2
+  chipsFallDelay: 0.01
+  chipDeathDuration: 0.15
   chipSwapDuration: 0.2
   reverseSwapDelay: 0.15
   minMatchSize: 3

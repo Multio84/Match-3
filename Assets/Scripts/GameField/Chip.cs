@@ -17,15 +17,20 @@ public enum ChipColor
 [RequireComponent(typeof(SpriteRenderer))]
 public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDragHandler
 {
-    protected Camera renderCamera;
-    protected Vector3 startDragPos;
-    protected SpriteRenderer sr;
+    protected GameSettings settings;
     protected GameField gameField;
-    protected CollapseHandler collapseManager;
+    protected SwapHandler swapHandler;
+    protected Camera renderCamera;
+    protected SpriteRenderer sr;
 
     public ChipColor Color;
+    protected Vector3 startDragPos;
     public Vector2Int CellPos { get; set; }
 
+    public bool IsSwapping; // if chip is in process of swap
+    public bool IsInAction; // if the chip is in any action, it can't be deleted in match
+    public bool IsMatched;  // if was marked as a part of some match
+    protected bool isDragging = false;
     // the chip is invisible when it's created while playing, until it has finished appearing
     bool isVisible = false;
     public bool IsVisible
@@ -41,11 +46,7 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
                 new Color(color.r, color.g, color.b, 0);
         }
     }
-    public bool IsSwapping { get; set; } // if chip is in process of swap
-    public bool IsInAction { get; set; } // if the chip is in any action, it can't be deleted in match
-    public bool IsMatched { get; set; }  // if was marked as a part of some match
 
-    protected bool isDragging = false;
     protected float dragThreshold;  // min sidtance for a chip to move, after which the chip starts swapping with it's neighbour
     protected float deathDuration;
     protected float fallDuration;
@@ -53,26 +54,37 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
     protected float distanceToAppear;
 
     public event Action OnChipLanded;
+    public event Action<Chip> OnDeathCompleted;
+    //public event Action<Chip, Vector2Int, bool> SwapRequested;
 
 
-    public virtual void Init(GameField gf, CollapseHandler cm, Vector2Int cellPos)
+    public virtual void Init(GameSettings gs, GameField gf, SwapHandler sh, Vector2Int cellPos)
     {
+        settings = gs;
         gameField = gf;
-        collapseManager = cm;
+        swapHandler = sh;
+
         renderCamera = Camera.main;
         sr = GetComponent<SpriteRenderer>();
 
-        dragThreshold = gameField.chipDragThreshold;
-        deathDuration = gameField.chipDeathDuration;
-        fallDuration = cm.chipFallDuration;
-        fallGravity = cm.chipFallGravity;
-        distanceToAppear = gameField.cellSize;
         CellPos = cellPos;
         IsVisible = false;
         IsSwapping = false;
+
+#if UNITY_EDITOR
+        gs.OnSettingsChanged += ApplyChipSettings;
+#endif
+        ApplyChipSettings();
     }
 
-    public event Action<Chip> OnDeathCompleted;
+    void ApplyChipSettings()
+    {
+        dragThreshold = settings.chipDragThreshold;
+        deathDuration = settings.chipDeathDuration;
+        distanceToAppear = settings.cellSize;
+        fallDuration = settings.chipFallDuration;
+        fallGravity = settings.chipFallGravity;
+    }
 
     public void OnPointerDown(PointerEventData eventData)
     {
@@ -128,9 +140,16 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
                 }
             }
 
-            gameField.swapHandler.Swap(this, direction, false);
+            swapHandler.Swap(this, direction, false);
+            //HandleDrag(direction);
         }
     }
+
+    //void HandleDrag(Vector2Int direction)
+    //{
+    //    SwapRequested += swapHandler.Swap;
+    //    SwapRequested?.Invoke(this, direction, false);
+    //}
 
     public void Fall(Vector3 targetPos)
     {
@@ -155,8 +174,8 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
 
         transform.position = targetPos;
 
-        OnChipLanded?.Invoke(); // GameField is counting landed chips
-        OnChipLanded = null;    // unsubscrive from landing event
+        OnChipLanded?.Invoke();
+        OnChipLanded = null;
     }
 
     IEnumerator AnimateAppearance()
@@ -187,6 +206,10 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
 
     protected void NotifyDeathCompleted()
     {
+#if UNITY_EDITOR
+        settings.OnSettingsChanged -= ApplyChipSettings;
+#endif
+        //SwapRequested = null;
         OnDeathCompleted?.Invoke(this);
     }
 }

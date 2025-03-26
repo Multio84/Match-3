@@ -2,22 +2,33 @@ using System;
 using UnityEngine;
 
 
-public class LevelGenerator : MonoBehaviour
+public class LevelGenerator : MonoBehaviour, IPreloader
 {
+    GameSettings settings;
     GameField gf;
-    CollapseHandler collapseHandler;
+    SwapHandler swapHandler;
 
     [SerializeField] GameObject cellPrefab;
     [SerializeField] GameObject[] chipsPrefabs;
     [SerializeField] GameObject cellsRoot;
 
-    public Action OnLevelGenerated;
+    int fieldWidth;
+    int fieldHeight;
+
+    public event Action OnLevelGenerated;
 
 
-    public void Setup(GameField gf, CollapseHandler ch)
+    public void Setup(GameSettings gs, GameField gf, SwapHandler sh)
     {
+        settings = gs;
         this.gf = gf;
-        collapseHandler = ch;
+        swapHandler = sh;
+    }
+
+    public void Preload()
+    {
+        fieldWidth = settings.width;
+        fieldHeight = settings.height;
     }
 
     public void GenerateLevel()
@@ -28,9 +39,9 @@ public class LevelGenerator : MonoBehaviour
 
     void GenerateFieldBack()
     {
-        for (int y = 0; y < gf.height; y++)
+        for (int y = 0; y < fieldHeight; y++)
         {
-            for (int x = 0; x < gf.width; x++)
+            for (int x = 0; x < fieldWidth; x++)
             {
                 SpawnFieldCell(new Vector2Int(x, y));
             }
@@ -46,9 +57,9 @@ public class LevelGenerator : MonoBehaviour
 
     void GenerateGameField()
     {
-        for (int y = 0; y < gf.height; y++)
+        for (int y = 0; y < fieldHeight; y++)
         {
-            for (int x = 0; x < gf.width; x++)
+            for (int x = 0; x < fieldWidth; x++)
             {
                 Vector2Int cellPos = new Vector2Int(x, y);
                 Chip chip = SpawnChip(cellPos);
@@ -69,7 +80,7 @@ public class LevelGenerator : MonoBehaviour
         chipObj.transform.SetParent(transform);
 
         Chip chip = chipObj.GetComponent<Chip>();
-        chip.Init(gf, collapseHandler, cellPos);
+        chip.Init(settings, gf, swapHandler, cellPos);
         //chip.name = "Chip_" + cellPos.x.ToString() + "_" + cellPos.y.ToString();
 
         return chip;

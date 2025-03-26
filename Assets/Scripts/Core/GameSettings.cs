@@ -1,7 +1,8 @@
 using UnityEngine;
+using System;
 
 
-[CreateAssetMenu(fileName = "GameSettings", menuName = "Settings/GameSettings")]
+[CreateAssetMenu(fileName = "GameSettings", menuName = "settings/GameSettings")]
 public class GameSettings : ScriptableObject
 {
     [Header("Field")]
@@ -19,8 +20,8 @@ public class GameSettings : ScriptableObject
     [Tooltip("Gravity for falling chip: falling speed factor.")]
     public float chipFallGravity = 2;
 
-    [Tooltip("Delay in miliseconds before next chip in a column starts falling.")]
-    public int chipsFallDelay = 10;
+    [Tooltip("Delay in seconds before next chip in a column starts falling.")]
+    public float chipsFallDelay = 0.01f;
 
     [Tooltip("Dragged chip distance after which chip moves by itself.")]
     public float chipDragThreshold { get { return cellSize / 5f; } }
@@ -42,4 +43,12 @@ public class GameSettings : ScriptableObject
 
     [Tooltip("Number of cells, maximum for match in line.")]
     public int maxMatchSize = 5;
+
+
+    public event Action OnSettingsChanged;
+
+    private void OnValidate()
+    {
+        OnSettingsChanged?.Invoke();
+    }
 }

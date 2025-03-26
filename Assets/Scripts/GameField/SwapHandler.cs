@@ -3,21 +3,29 @@ using System.Collections;
 using System;
 
 
-public class SwapHandler : MonoBehaviour
+public class SwapHandler : SettingsSubscriber
 {
+    public override GameSettings Settings { get; set; }
     GameField gf;
     MatchFinder matchFinder;
 
-    const float ChipSwapDuration = 0.2f;    // chips swap animation time duration in seconds
-    const float ReverseSwapDelay = 0.15f;   // seconds before automatic reverse swap, when manual swap didn't lead to match
+    float chipSwapDuration;
+    float reverseSwapDelay;
 
-    public Action OnSwapSuccessful;
+    public event Action OnSwapSuccessful;
 
 
-    public void Setup(GameField gf, MatchFinder mf)
+    public void Setup(GameSettings settings, GameField gf, MatchFinder mf)
     {
+        Settings = settings;
         this.gf = gf;
         matchFinder = mf;
+    }
+
+    public override void ApplyGameSettings()
+    {
+        chipSwapDuration = Settings.chipSwapDuration;
+        reverseSwapDelay = Settings.reverseSwapDelay;
     }
 
     public void Swap(Chip chip, Vector2Int direction, bool isReverse)
@@ -58,10 +66,10 @@ public class SwapHandler : MonoBehaviour
         float elapsedTime = 0;
 
         // animate chips swap
-        while (elapsedTime < ChipSwapDuration)
+        while (elapsedTime < chipSwapDuration)
         {
-            operation.draggedChip.transform.position = Vector3.Lerp(chip1Pos, chip2Pos, elapsedTime / ChipSwapDuration);
-            operation.swappedChip.transform.position = Vector3.Lerp(chip2Pos, chip1Pos, elapsedTime / ChipSwapDuration);
+            operation.draggedChip.transform.position = Vector3.Lerp(chip1Pos, chip2Pos, elapsedTime / chipSwapDuration);
+            operation.swappedChip.transform.position = Vector3.Lerp(chip2Pos, chip1Pos, elapsedTime / chipSwapDuration);
             elapsedTime += Time.deltaTime;
             yield return null;
         }
@@ -69,8 +77,7 @@ public class SwapHandler : MonoBehaviour
         operation.draggedChip.transform.position = chip2Pos;
         operation.swappedChip.transform.position = chip1Pos;
 
-        yield return new WaitForSeconds(ReverseSwapDelay);
-
+        yield return new WaitForSeconds(reverseSwapDelay);
 
         HandleSwap(operation);
     }

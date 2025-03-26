@@ -7,9 +7,8 @@ public class ChipDestroyer : MonoBehaviour
     GameField gf;
     CollapseHandler collapseHandler;
 
-    int chipsToDelete = 0;  // number of chips, going to be deleted in current iteration
-
-    public Action OnMatchesCleared;
+    int chipsToDelete = 0;  // number of chips to be deleted in current iteration
+    public event Action OnMatchesCleared;
 
 
     public void Setup(GameField gf, CollapseHandler ch)
@@ -24,7 +23,7 @@ public class ChipDestroyer : MonoBehaviour
         chipsToDelete = 0;
         if (gf.IsBoardNullOrEmpty())
         {
-            Debug.Log("No chips to delete.");
+            Debug.Log("ChipDestroyer: No chips to delete.");
             return;
         }
         foreach (var chip in gf.BoardEnumerable)
@@ -44,10 +43,9 @@ public class ChipDestroyer : MonoBehaviour
 
     void HandleChipDeath(Chip chip)
     {
-        if (gf.IsChipCellPosActual(chip))//gf.chips[chip.CellPos.x, chip.CellPos.y] == chip)
+        if (gf.IsChipCellPosActual(chip))
         {
             gf.SetChip(chip.CellPos, null);
-            //gf.chips[chip.CellPos.x, chip.CellPos.y] = null;
             //Debug.Log($"Chip_{chip} removed successfully.");
         }
 
@@ -71,9 +69,7 @@ public class ChipDestroyer : MonoBehaviour
     void UnsubscribeFromChip(Chip chip)
     {
         if (chip is null) return;
-
         chip.OnDeathCompleted -= HandleChipDeath;
-        chip.OnChipLanded -= collapseHandler.HandleChipLanded;
     }
 
     void HandleMatchesCleared()

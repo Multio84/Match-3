@@ -1,7 +1,7 @@
 using UnityEngine;
 
 
-public class GameplayConductor : MonoBehaviour, IInitializable
+public class GameplayConductor : MonoBehaviour, IPreloader
 {
     GameField gameField;
     LevelGenerator levelGenerator;
@@ -12,7 +12,6 @@ public class GameplayConductor : MonoBehaviour, IInitializable
 
 
     public void Setup(
-
         GameField gf,
         LevelGenerator lg,
         MatchFinder mf,
@@ -29,7 +28,7 @@ public class GameplayConductor : MonoBehaviour, IInitializable
         chipDestroyer = cd;
     }
 
-    public void Init()
+    public void Preload()
     {
         levelGenerator.OnLevelGenerated += OnLevelGenerated;
         chipDestroyer.OnMatchesCleared += OnMatchesCleared;
@@ -57,7 +56,6 @@ public class GameplayConductor : MonoBehaviour, IInitializable
 
     void OnMatchesCleared()
     {
-        //Debug.Log("Matches cleared. Starting Collapse.");
         collapseHandler.CollapseChips();
     }
 

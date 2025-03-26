@@ -2,12 +2,15 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
-public class MatchFinder : MonoBehaviour, IInitializable
+public class MatchFinder : MonoBehaviour, IPreloader
 {
     GameField gf;
+    GameSettings settings;
 
-    static int fieldWidth;
-    static int fieldHeight;
+    int fieldWidth;
+    int fieldHeight;
+    int minMatchSize;
+    int maxMatchSize;
 
     // constant field bounds to search for mathes
     static Vector2Int fieldBottomLeft;
@@ -17,23 +20,25 @@ public class MatchFinder : MonoBehaviour, IInitializable
     Vector2Int bottomLeft;
     Vector2Int topRight;
 
-    const int MinMatchSize = 3;    // number of cells, minimum for match in line, except the first chip
-    const int MaxMatchSize = 5;    // number of cells, maximum for match in line, except the first chip
-
-    HashSet<Chip> chipsToCheck = new HashSet<Chip>(MaxMatchSize);   // chips in line, that should be checked for match
+    HashSet<Chip> chipsToCheck;   // chips in line, that should be checked for match
 
 
-    public void Setup(GameField gf)
+    public void Setup(GameField gf, GameSettings settings)
     {
         this.gf = gf;
+        this.settings = settings;
     }
 
-    public void Init()
+    public void Preload()
     {
         fieldWidth = gf.width;
         fieldHeight = gf.height;
         fieldBottomLeft = Vector2Int.zero;
         fieldTopRight = new Vector2Int(fieldWidth - 1, fieldHeight - 1);
+
+        minMatchSize = settings.minMatchSize;
+        maxMatchSize = settings.maxMatchSize;
+        chipsToCheck = new HashSet<Chip>(maxMatchSize);
     }
 
     public bool FindMatches(SwapOperation operation)
@@ -60,7 +65,7 @@ public class MatchFinder : MonoBehaviour, IInitializable
         Vector2Int cell1 = operation.draggedChip.CellPos;
         Vector2Int cell2 = operation.swappedChip.CellPos;
 
-        int searchDistance = MinMatchSize - 1;    // distance (from swapped chips) in cells to search
+        int searchDistance = minMatchSize - 1;    // distance (from swapped chips) in cells to search
         int minX = Mathf.Max(Mathf.Min(cell1.x, cell2.x) - searchDistance, 0);
         int minY = Mathf.Max(Mathf.Min(cell1.y, cell2.y) - searchDistance, 0);
         int maxX = Mathf.Min(Mathf.Max(cell1.x, cell2.x) + searchDistance, fieldWidth - 1);
@@ -68,6 +73,7 @@ public class MatchFinder : MonoBehaviour, IInitializable
 
         bottomLeft = new Vector2Int(minX, minY);
         topRight = new Vector2Int(maxX, maxY);
+        //Debug.Log($"SwapSearchZone is {bottomLeft} : {topRight}");
     }
 
     // finds line matches inside the set region
@@ -82,12 +88,12 @@ public class MatchFinder : MonoBehaviour, IInitializable
         if (isVertical)
         {
             direction = Vector2Int.up;
-            max.y = topRight.y + 1 - MinMatchSize;
+            max.y = topRight.y + 1 - minMatchSize;
         }
         else
         {
             direction = Vector2Int.right;
-            max.x = topRight.x + 1 - MinMatchSize;
+            max.x = topRight.x + 1 - minMatchSize;
         }
 
         for (int y = min.y; y <= max.y; y++)
@@ -102,7 +108,7 @@ public class MatchFinder : MonoBehaviour, IInitializable
                 chipsToCheck.Clear();
                 chipsToCheck.Add(currentChip);
 
-                for (int i = 1; i < MinMatchSize; i++)
+                for (int i = 1; i < minMatchSize; i++)
                 {
                     int checkX = x + i * direction.x;
                     int checkY = y + i * direction.y;
@@ -114,7 +120,7 @@ public class MatchFinder : MonoBehaviour, IInitializable
                     chipsToCheck.Add(nextChip);
                 }
 
-                if (chipsToCheck.Count >= MinMatchSize)
+                if (chipsToCheck.Count >= minMatchSize)
                 {
                     foreach (Chip chip in chipsToCheck)
                         chip.IsMatched = true;

@@ -5,36 +5,46 @@ using System.Threading.Tasks;
 using System;
 
 
-public class CollapseHandler : MonoBehaviour
+public class CollapseHandler : SettingsSubscriber, IPreloader
 {
+    public override GameSettings Settings { get; set; }
     GameField gf;
     LevelGenerator levelGenerator;
 
-    public float chipFallDuration = 0.4f;   // duration of falling chip animation
-    public float chipFallGravity = 2;   // gravity for falling chip, that is falling speed factor
-    const int ChipsFallDelay = 10;  // miliseconds to await before next set of chips falling
-
-    // chips collapse in rows: one row after another.
-    // This is total count of chips in all rows to collapse for current collapse to be completed
+    int fieldWidth;
+    int fieldHeight;
+    int chipsFallDelay;
     public int totalChipsToFallCount = 0;
 
-    public Action OnCollapseCompleted;
+    public event Action OnCollapseCompleted;
 
 
-    public void Setup(GameField gf, LevelGenerator lg)
+    public void Setup(GameSettings settings, GameField gf, LevelGenerator lg)
     {
+        Settings = settings;
         this.gf = gf;
         levelGenerator = lg;
+    }
+
+    public override void ApplyGameSettings()
+    {
+        chipsFallDelay = (int)(Settings.chipsFallDelay * 1000f);
+    }
+
+    public void Preload()
+    {
+        fieldHeight = Settings.height;
+        fieldWidth = Settings.width;
     }
 
     public async void CollapseChips()
     {
         int iteration = 0;
-        int maxIterations = gf.height * 10;    // protection from the infinite loop
+        int maxIterations = fieldHeight * 10;    // protection from the infinite loop
 
         while (iteration < maxIterations)
         {
-            if (iteration > gf.height)
+            if (iteration > fieldHeight)
             {
                 Debug.LogWarning("CollapseHandler: Attempt to drop chips more, than level's height.");
             }
@@ -48,7 +58,7 @@ public class CollapseHandler : MonoBehaviour
 
             gf.SyncFallingChipsWithBoard(chipsToFall);
             StartCoroutine(DropChips(chipsToFall));
-            await Task.Delay(ChipsFallDelay);
+            await Task.Delay(chipsFallDelay);
 
             iteration++;
         }
@@ -59,11 +69,11 @@ public class CollapseHandler : MonoBehaviour
     {
         Dictionary<Vector2Int, Chip> chipsToFall = new Dictionary<Vector2Int, Chip>();
 
-        for (int x = 0; x < gf.width; x++)
+        for (int x = 0; x < fieldWidth; x++)
         {
             Vector2Int? bottomCell = null;  // first cell (from bottom) without chip in current column
 
-            for (int y = 0; y < gf.height; y++)
+            for (int y = 0; y < fieldHeight; y++)
             {
                 Chip currentChip = gf.GetChip(new Vector2Int(x, y));
                 if (currentChip is null)
@@ -73,10 +83,10 @@ public class CollapseHandler : MonoBehaviour
                         bottomCell = new Vector2Int(x, y);  // save bottom cell
                     }
 
-                    if (y == gf.height - 1)
+                    if (y == fieldHeight - 1)
                     {
                         // spawn and save new chip outside (over) field
-                        Chip newChip = levelGenerator.SpawnChip(new Vector2Int(x, gf.height));
+                        Chip newChip = levelGenerator.SpawnChip(new Vector2Int(x, fieldHeight));
                         if (!chipsToFall.TryAdd(bottomCell.Value, newChip))
                             Debug.LogError($"Duplicate target cell {bottomCell.Value} while adding new chip {newChip}");
                         break;
@@ -103,8 +113,8 @@ public class CollapseHandler : MonoBehaviour
             Chip chip = entry.Value;
 
             chip.OnChipLanded += HandleChipLanded;
-            Vector3 targetPos = gf.GetCellWorldPos(entry.Key);
-            chip.Fall(targetPos);
+            Vector3 targetWorldPos = gf.GetCellWorldPos(targetCell);
+            chip.Fall(targetWorldPos);
         }
         yield return null;
     }
