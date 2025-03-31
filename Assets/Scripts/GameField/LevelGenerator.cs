@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 
 
-public class LevelGenerator : MonoBehaviour, IPreloader
+public class LevelGenerator : MonoBehaviour, IInitializer
 {
     GameSettings settings;
     GameField gf;
@@ -25,7 +25,7 @@ public class LevelGenerator : MonoBehaviour, IPreloader
         swapHandler = sh;
     }
 
-    public void Preload()
+    public void Init()
     {
         fieldWidth = settings.width;
         fieldHeight = settings.height;
@@ -64,7 +64,7 @@ public class LevelGenerator : MonoBehaviour, IPreloader
                 Vector2Int cellPos = new Vector2Int(x, y);
                 Chip chip = SpawnChip(cellPos);
                 chip.IsVisible = true;
-                if (!gf.SyncChipWithBoardByItsPos(chip))
+                if (!gf.SetChipByItsPos(chip))
                     Debug.LogWarning("Attempt to spawn a chip outside the GameField: chip wasn't synchronised");
             }
         }
@@ -80,8 +80,9 @@ public class LevelGenerator : MonoBehaviour, IPreloader
         chipObj.transform.SetParent(transform);
 
         Chip chip = chipObj.GetComponent<Chip>();
-        chip.Init(settings, gf, swapHandler, cellPos);
+        chip.name = "Chip_" + chip.Color.ToString();
         //chip.name = "Chip_" + cellPos.x.ToString() + "_" + cellPos.y.ToString();
+        chip.Init(settings, gf, swapHandler, cellPos);
 
         return chip;
     }

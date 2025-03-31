@@ -25,7 +25,7 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
 
     public ChipColor Color;
     protected Vector3 startDragPos;
-    public Vector2Int CellPos { get; set; }
+    public Vector2Int Cell { get; set; }
 
     public bool IsSwapping; // if chip is in process of swap
     public bool IsInAction; // if the chip is in any action, it can't be deleted in match
@@ -67,7 +67,7 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
         renderCamera = Camera.main;
         sr = GetComponent<SpriteRenderer>();
 
-        CellPos = cellPos;
+        Cell = cellPos;
         IsVisible = false;
         IsSwapping = false;
 

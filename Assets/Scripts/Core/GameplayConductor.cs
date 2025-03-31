@@ -1,7 +1,7 @@
 using UnityEngine;
 
 
-public class GameplayConductor : MonoBehaviour, IPreloader
+public class GameplayConductor : MonoBehaviour, IInitializer
 {
     GameField gameField;
     LevelGenerator levelGenerator;
@@ -28,7 +28,7 @@ public class GameplayConductor : MonoBehaviour, IPreloader
         chipDestroyer = cd;
     }
 
-    public void Preload()
+    public void Init()
     {
         levelGenerator.OnLevelGenerated += OnLevelGenerated;
         chipDestroyer.OnMatchesCleared += OnMatchesCleared;

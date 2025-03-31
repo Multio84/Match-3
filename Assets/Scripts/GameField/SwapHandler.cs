@@ -41,8 +41,8 @@ public class SwapHandler : SettingsSubscriber
 
     SwapOperation GetSwapOperation(Chip chip, Vector2Int direction, bool isReverse)
     {
-        Vector2Int targetCell = chip.CellPos + direction;   // find adjacent chip to swap with this
-        if (!gf.IsValidChip(targetCell.x, targetCell.y))
+        Vector2Int targetCell = chip.Cell + direction;   // find adjacent cell to swap with chip in it
+        if (!gf.IsValidChip(targetCell))
         {
             Debug.Log("Attempt to make swap with invalid chip.");
             return null;
@@ -95,7 +95,6 @@ public class SwapHandler : SettingsSubscriber
         if (matchFinder.FindMatches(operation))
         {
             operation.Stop();
-
             OnSwapSuccessful?.Invoke();
         }
         else

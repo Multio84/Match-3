@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using System;
 
 
-public class CollapseHandler : SettingsSubscriber, IPreloader
+public class CollapseHandler : SettingsSubscriber, IInitializer
 {
     public override GameSettings Settings { get; set; }
     GameField gf;
@@ -31,7 +31,7 @@ public class CollapseHandler : SettingsSubscriber, IPreloader
         chipsFallDelay = (int)(Settings.chipsFallDelay * 1000f);
     }
 
-    public void Preload()
+    public void Init()
     {
         fieldHeight = Settings.height;
         fieldWidth = Settings.width;
@@ -46,7 +46,7 @@ public class CollapseHandler : SettingsSubscriber, IPreloader
         {
             if (iteration > fieldHeight)
             {
-                Debug.LogWarning("CollapseHandler: Attempt to drop chips more, than level's height.");
+                Debug.LogWarning("CollapseHandler: Attempt to drop more chips, than level's height can hold.");
             }
 
             Dictionary<Vector2Int, Chip> chipsToFall = CollectChipsToFall();
@@ -75,12 +75,14 @@ public class CollapseHandler : SettingsSubscriber, IPreloader
 
             for (int y = 0; y < fieldHeight; y++)
             {
-                Chip currentChip = gf.GetChip(new Vector2Int(x, y));
+                Vector2Int currentCell = new Vector2Int(x, y);
+                Chip currentChip = gf.GetChip(currentCell);
+
                 if (currentChip is null)
                 {
                     if (bottomCell is null)
                     {
-                        bottomCell = new Vector2Int(x, y);  // save bottom cell
+                        bottomCell = currentCell;
                     }
 
                     if (y == fieldHeight - 1)

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
-public class MatchFinder : MonoBehaviour, IPreloader
+public class MatchFinder : MonoBehaviour, IInitializer
 {
     GameField gf;
     GameSettings settings;
@@ -23,16 +23,16 @@ public class MatchFinder : MonoBehaviour, IPreloader
     HashSet<Chip> chipsToCheck;   // chips in line, that should be checked for match
 
 
-    public void Setup(GameField gf, GameSettings settings)
+    public void Setup(GameField gf, GameSettings gs)
     {
         this.gf = gf;
-        this.settings = settings;
+        settings = gs;
     }
 
-    public void Preload()
+    public void Init()
     {
-        fieldWidth = gf.width;
-        fieldHeight = gf.height;
+        fieldWidth = settings.width;
+        fieldHeight = settings.height;
         fieldBottomLeft = Vector2Int.zero;
         fieldTopRight = new Vector2Int(fieldWidth - 1, fieldHeight - 1);
 
@@ -62,8 +62,8 @@ public class MatchFinder : MonoBehaviour, IPreloader
     // set search region for matches only around 2 swapped cells
     void SetSwapEffectZone(SwapOperation operation)
     {
-        Vector2Int cell1 = operation.draggedChip.CellPos;
-        Vector2Int cell2 = operation.swappedChip.CellPos;
+        Vector2Int cell1 = operation.draggedChip.Cell;
+        Vector2Int cell2 = operation.swappedChip.Cell;
 
         int searchDistance = minMatchSize - 1;    // distance (from swapped chips) in cells to search
         int minX = Mathf.Max(Mathf.Min(cell1.x, cell2.x) - searchDistance, 0);
@@ -100,23 +100,27 @@ public class MatchFinder : MonoBehaviour, IPreloader
         {
             for (int x = min.x; x <= max.x; x++)
             {
-                // TODO: when all common algorythm is done, check if it's really needed:
-                if (!gf.IsValidChip(x, y)) continue;
-
-                // save the first chip without check
+                // save the first chip without color check
                 Chip currentChip = gf.GetChip(new Vector2Int(x, y));
+                if (currentChip is null)
+                    continue;
+
                 chipsToCheck.Clear();
                 chipsToCheck.Add(currentChip);
 
                 for (int i = 1; i < minMatchSize; i++)
                 {
-                    int checkX = x + i * direction.x;
-                    int checkY = y + i * direction.y;
+                    Vector2Int checkCell = new Vector2Int(
+                        x + i * direction.x,
+                        y + i * direction.y
+                    );
 
-                    if (!gf.IsValidChip(checkX, checkY)) break;
-                    Chip nextChip = gf.GetChip(new Vector2Int(checkX, checkY));
+                    Chip nextChip = gf.GetChip(checkCell);
+                    if (nextChip is null)
+                        break;
+                    if (currentChip.Color != nextChip.Color)
+                        break;
 
-                    if (currentChip.Color != nextChip.Color) break;
                     chipsToCheck.Add(nextChip);
                 }
 

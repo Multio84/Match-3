@@ -13,7 +13,7 @@ public class GameBootstraper : MonoBehaviour
     [SerializeField] SwapHandler swapHandler;
     [SerializeField] CollapseHandler collapseHandler;
     [SerializeField] ChipDestroyer chipDestroyer;
-    IPreloader[] preloadables;
+    IInitializer[] preloadables;
     SettingsSubscriber[] settingsSubscribers;
 
 
@@ -22,8 +22,8 @@ public class GameBootstraper : MonoBehaviour
         DontDestroyOnLoad(gameObject);
 
         Setup();
-        Init();
-        Launch();
+        UseSettings();
+        Preload();
     }
 
     // sets dependencies
@@ -43,7 +43,7 @@ public class GameBootstraper : MonoBehaviour
             return;
         }
 
-        gameField.Setup(swapHandler, settings);
+        gameField.Setup(settings);
         levelGenerator.Setup(settings, gameField, swapHandler);
         matchFinder.Setup(gameField, settings);
         swapHandler.Setup(settings, gameField, matchFinder);
@@ -54,7 +54,7 @@ public class GameBootstraper : MonoBehaviour
     }
 
     // inits game settings
-    void Init()
+    void UseSettings()
     {
         settingsSubscribers = new SettingsSubscriber[]
         {
@@ -64,14 +64,14 @@ public class GameBootstraper : MonoBehaviour
 
         foreach (var subscriber in settingsSubscribers)
         {
-            subscriber.Init(subscriber);
+            subscriber.UseSettings(subscriber);
         }
     }
 
     // launches local processes
-    void Launch()
+    void Preload()
     {
-        preloadables = new IPreloader[]
+        preloadables = new IInitializer[]
         {
             gameField,
             levelGenerator,
@@ -82,7 +82,7 @@ public class GameBootstraper : MonoBehaviour
 
         foreach (var obj in preloadables)
         {
-            obj.Preload();
+            obj.Init();
         }
     }
 

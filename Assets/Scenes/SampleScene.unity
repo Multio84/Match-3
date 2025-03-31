@@ -246,12 +246,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a64dbe4fdf03411488376842f2236ce1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  swapHandler: {fileID: 0}
   cellSize: 0
   width: 7
   height: 10
-  chipDragThreshold: 1
-  chipDeathDuration: 0.15
 --- !u!4 &442388761
 Transform:
   m_ObjectHideFlags: 0
@@ -437,8 +434,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 01f0054febead83468e7fdbe1e427aff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  chipFallDuration: 0.4
-  chipFallGravity: 2
   totalChipsToFallCount: 0
 --- !u!1 &772855902
 GameObject:

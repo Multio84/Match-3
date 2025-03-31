@@ -9,7 +9,7 @@ public abstract class SettingsSubscriber : MonoBehaviour
 #if UNITY_EDITOR
     protected virtual void OnDisable()
     {
-        if (Settings == null)
+        if (Settings is null)
         {
             Debug.LogError($"settings is null: OnSettingsChanged won't be unsibscribed!");
             return;
@@ -19,9 +19,9 @@ public abstract class SettingsSubscriber : MonoBehaviour
     }
 #endif
 
-    public virtual void Init(SettingsSubscriber subscriber)
+    public virtual void UseSettings(SettingsSubscriber subscriber)
     {
-        if (Settings == null)
+        if (Settings is null)
         {
             Debug.LogError($"{subscriber.name}'s settings is null: won't be initialized!");
             return;

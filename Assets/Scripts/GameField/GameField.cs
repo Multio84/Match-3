@@ -20,13 +20,18 @@ using UnityEngine;
 ///     </item>
 ///     <item>
 ///         <description>
+///         <c>field</c> - "поле" - игровое поле, составленное из данных уровня и содержащее board.
+///         </description>
+///     </item>
+///     <item>
+///         <description>
 ///         <c>Sync...</c> - приставка в названии методов, выполняющих приведение в соответствие 
 ///         положения фишек на поле и их индекса в массиве board.
 ///         </description>
 ///     </item>
 ///     <item>
 ///         <description>
-///         <c>cell</c> или <c>cellPos</c> - переменные, содержащие позицию клетки в игровом поле,
+///         <c>cell</c> или <c>cell</c> - переменные, содержащие позицию клетки в игровом поле,
 ///         заданную в координатах сетки. Используемые типы: <see cref="Vector2Int"/> или <see cref="Vector3Int"/>.
 ///         </description>
 ///     </item>
@@ -39,25 +44,24 @@ using UnityEngine;
 /// </list>
 /// </summary>
 
-public class GameField : MonoBehaviour, IPreloader
+public class GameField : MonoBehaviour, IInitializer
 {
     GameSettings settings;
-
-    [Header("Field settings")]
     Grid grid;
+
     public float cellSize;
     public int width;
     public int height;
     Chip[,] board;
     public IEnumerable<Chip> BoardEnumerable => board.Cast<Chip>(); // property for iterating chips outside GameField
-    
 
-    public void Setup(SwapHandler sh, GameSettings settings)
+
+    public void Setup(GameSettings gs)
     {
-        this.settings = settings;
+        settings = gs;
     }
 
-    public void Preload()
+    public void Init()
     {
         cellSize = settings.cellSize;
         width = settings.width;
@@ -80,115 +84,151 @@ public class GameField : MonoBehaviour, IPreloader
         transform.position = newPos;
     }
 
-    public bool IsBoardNullOrEmpty()
+    public bool SetChipByItsPos(Chip chip)
     {
-        return board is null || board.Length == 0;
+        if (SetChip(chip.Cell, chip))
+        {
+            return true;
+        }
+
+        Debug.LogError($"SetChip By ItsPos: Failed at cell {chip.Cell}");
+        return false;
     }
 
-    public Chip GetChip(Vector2Int cellPos)
+    public void SetChipByNewPos(Chip chip, Vector2Int cell)
     {
-        return board[cellPos.x, cellPos.y];
+        if (SetChip(cell, chip))
+        {
+            if (chip != null)
+                chip.Cell = cell;
+        }
+        else
+        {
+            Debug.LogError($"SetChip By NewPos: Failed at cell {cell}");
+        }
     }
 
-    public void SetChip(Vector2Int cellPos, Chip chip)
-    {
-        board[cellPos.x, cellPos.y] = chip;
-    }
-
-    public bool SyncChipWithBoardByItsPos(Chip chip)
-    {
-        Vector2Int cell = chip.CellPos;
-
-        if (!IsCellInField(cell)) return false;
-        SetChip(cell, chip);
-
-        return true;
-    }
-
-    public void SyncChipWithBoardByNewPos(Chip chip, Vector2Int cellPos)
-    {
-        SetChip(cellPos, chip);
-        chip.CellPos = cellPos;
-    }
-
-    // changes chip's position in array: moves it from start chip's place to the cellPos
+    // changes chip's position in array: moves it from start chip's place to the cell
     public void SyncFallingChipsWithBoard(Dictionary<Vector2Int, Chip> chipsToFall)
     {
         foreach (var entry in chipsToFall)
         {
-            Vector2Int chipCell = entry.Value.CellPos;
+            Vector2Int chipCell = entry.Value.Cell;
             Vector2Int targetCell = entry.Key;
 
-            if (!IsCellInField(targetCell))
+            // new chip is created outside of the field and is not on board yet,
+            // so it doesn't have to be deleted from board
+            if (IsCellInField(chipCell))
             {
-                Debug.LogError("Sync field while collapsing: target cell for falling chip is outside the field.");
-                break;
+                DeleteChip(chipCell);
             }
 
-            // chip created outside of the field is not in chips array yet,
-            // so it doesn't have to be deleted from the array
-            if (IsCellInField(chipCell))
-                SetChip(chipCell, null);
-
-            SyncChipWithBoardByNewPos(entry.Value, targetCell);
+            SetChipByNewPos(entry.Value, targetCell);
         }
     }
 
     public void UpdateSwappedChips(SwapOperation operation)
     {
-        Vector2Int cell1 = operation.draggedChip.CellPos;
-        Vector2Int cell2 = operation.swappedChip.CellPos;
+        Vector2Int cell1 = operation.draggedChip.Cell;
+        Vector2Int cell2 = operation.swappedChip.Cell;
 
         // set chips swapped celPoses
-        SyncChipWithBoardByNewPos(operation.swappedChip, cell1);
-        SyncChipWithBoardByNewPos(operation.draggedChip, cell2);
+        SetChipByNewPos(operation.swappedChip, cell1);
+        SetChipByNewPos(operation.draggedChip, cell2);
     }
 
-    public bool IsChipCellPosActual(Chip chip)
+    public bool IsChipCellActual(Chip chip)
     {
-        return board[chip.CellPos.x, chip.CellPos.y] == chip;
-    }
-
-    public bool IsValidChip(int x, int y)
-    {
-        var cell = new Vector2Int(x, y);
-
-        if (!IsCellInField(cell))
+        Vector2Int cell = chip.Cell;
+        if (!IsCellInField(cell) || !IsValidChip(cell))
         {
-            //Debug.Log($"Cell {cell} is not in field.");
             return false;
         }
+
+        if (GetChip(cell) == chip)
+            return true;
+
+        return false;
+    }
+
+    public bool IsValidChip(Vector2Int cell)
+    {
         if (GetChip(cell) is null)
         {
-            //Debug.Log($"Cell {cell} is null.");
+            Debug.Log($"Cell {cell} is null.");
             return false;
         }
 
         return true;
     }
 
-    public bool IsCellInField(Vector2Int cellPos)
+    public Chip GetChip(Vector2Int cell)
     {
-        if (board == null) Debug.LogError("Chips array is empty!");
+        if (!IsCellInField(cell) || IsBoardNullOrEmpty())
+        {
+            Debug.LogError($"Attempt to GetChip from {cell}: Failed.");
+            return null;
+        }
 
-        if (cellPos.x < 0 || cellPos.x >= board.GetLength(0) ||
-            cellPos.y < 0 || cellPos.y >= board.GetLength(1))
+        return board[cell.x, cell.y];
+    }
+
+    public bool SetChip(Vector2Int cell, Chip chip)
+    {
+        if (!IsCellInField(cell) || board is null)
+        {
+            Debug.LogError($"Attempt to SetChip to {cell}: Failed.");
+            return false;
+        }
+
+        board[cell.x, cell.y] = chip;
+        return true;
+    }
+
+    public bool DeleteChip(Vector2Int cell)
+    {
+        if (!IsCellInField(cell) || board is null)
+        {
+            Debug.LogError($"Attempt to DeleteChip in {cell}: Failed.");
+            return false;
+        }
+
+        board[cell.x, cell.y] = null;
+        return true;
+    }
+
+    public bool IsCellInField(Vector2Int cell)
+    {
+        if (board == null)
+        {
+            Debug.LogError("Board is null.");
+            return false;
+        }
+
+        if (cell.x < 0 || cell.x > board.GetLength(0) - 1 ||
+            cell.y < 0 || cell.y > board.GetLength(1) - 1)
         {
             return false;
         }
+
         return true;
     }
 
     public Vector2Int GetCellFieldPos(Vector3 worldPos)
     {
-        Vector3Int cellPos3 = grid.WorldToCell(worldPos);
+        Vector3Int cell3 = grid.WorldToCell(worldPos);
 
-        return new Vector2Int(cellPos3.x, cellPos3.y);
+        return new Vector2Int(cell3.x, cell3.y);
     }
 
-    public Vector3 GetCellWorldPos(Vector2Int cellPos)
+    public Vector3 GetCellWorldPos(Vector2Int cell)
     {
-        return grid.CellToWorld(new Vector3Int(cellPos.x, cellPos.y, 0));
+        return grid.CellToWorld(new Vector3Int(cell.x, cell.y, 0));
+    }
+
+    public bool IsBoardNullOrEmpty()
+    {
+        return board is null || board.Length == 0;
     }
 
 }

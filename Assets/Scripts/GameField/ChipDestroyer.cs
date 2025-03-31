@@ -43,9 +43,9 @@ public class ChipDestroyer : MonoBehaviour
 
     void HandleChipDeath(Chip chip)
     {
-        if (gf.IsChipCellPosActual(chip))
+        if (gf.IsChipCellActual(chip))
         {
-            gf.SetChip(chip.CellPos, null);
+            gf.SetChip(chip.Cell, null);
             //Debug.Log($"Chip_{chip} removed successfully.");
         }
 
