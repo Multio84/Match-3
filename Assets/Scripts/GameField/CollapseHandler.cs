@@ -15,6 +15,7 @@ public class CollapseHandler : SettingsSubscriber, IInitializer
     int fieldHeight;
     int chipsFallDelay;
     public int totalChipsToFallCount = 0;
+    Queue<Dictionary<Vector2Int, Chip>> chipsToFall = new Queue<Dictionary<Vector2Int, Chip>>();
 
     public event Action OnCollapseCompleted;
 
@@ -29,6 +30,7 @@ public class CollapseHandler : SettingsSubscriber, IInitializer
     public override void ApplyGameSettings()
     {
         chipsFallDelay = (int)(Settings.chipsFallDelay * 1000f);
+        
     }
 
     public void Init()
@@ -49,15 +51,15 @@ public class CollapseHandler : SettingsSubscriber, IInitializer
                 Debug.LogWarning("CollapseHandler: Attempt to drop more chips, than level's height can hold.");
             }
 
-            Dictionary<Vector2Int, Chip> chipsToFall = CollectChipsToFall();
-            if (chipsToFall.Count == 0)
+            Dictionary<Vector2Int, Chip> chipsRowsToFall = CollectChipsToFall();
+            if (chipsRowsToFall.Count == 0)
             {
                 //Debug.Log("No more chips to fall were found.");
                 break;
             }
 
-            gf.SyncFallingChipsWithBoard(chipsToFall);
-            StartCoroutine(DropChips(chipsToFall));
+            gf.SyncFallingChipsWithBoard(chipsRowsToFall);
+            StartCoroutine(DropChips(chipsRowsToFall));
             await Task.Delay(chipsFallDelay);
 
             iteration++;

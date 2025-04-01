@@ -49,7 +49,7 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
 
     protected float dragThreshold;  // min sidtance for a chip to move, after which the chip starts swapping with it's neighbour
     protected float deathDuration;
-    protected float fallDuration;
+    protected float startFallSpeed;
     protected float fallGravity;
     protected float distanceToAppear;
 
@@ -82,7 +82,7 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
         dragThreshold = settings.chipDragThreshold;
         deathDuration = settings.chipDeathDuration;
         distanceToAppear = settings.cellSize;
-        fallDuration = settings.chipFallDuration;
+        startFallSpeed = settings.chipFallStartSpeed;
         fallGravity = settings.chipFallGravity;
     }
 
@@ -158,17 +158,40 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
         StartCoroutine(AnimateFall(targetPos));
     }
 
+    //IEnumerator AnimateFall(Vector3 targetPos)
+    //{
+    //    Vector3 startPos = transform.position;
+
+    //    float elapsedTime = 0;
+
+    //    while (elapsedTime < fallDuration)
+    //    {
+    //        float t = Mathf.Pow(elapsedTime / fallDuration, fallGravity);
+    //        transform.position = Vector3.Lerp(startPos, targetPos, t);
+    //        elapsedTime += Time.deltaTime;
+    //        yield return null;
+    //    }
+
+    //    transform.position = targetPos;
+
+    //    OnChipLanded?.Invoke();
+    //    OnChipLanded = null;
+    //}
+
+
+
+
     IEnumerator AnimateFall(Vector3 targetPos)
     {
-        Vector3 startPos = transform.position;
+        float fallSpeed = startFallSpeed;
 
-        float elapsedTime = 0;
-
-        while (elapsedTime < fallDuration)
+        while (Vector3.Distance(transform.position, targetPos) > 10f)
         {
-            float t = Mathf.Pow(elapsedTime / fallDuration, fallGravity);
-            transform.position = Vector3.Lerp(startPos, targetPos, t);
-            elapsedTime += Time.deltaTime;
+            fallSpeed += fallGravity * Time.deltaTime;
+            float step = fallSpeed * Time.deltaTime;
+
+            transform.position = Vector3.MoveTowards(transform.position, targetPos, step);
+
             yield return null;
         }
 
@@ -177,6 +200,13 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
         OnChipLanded?.Invoke();
         OnChipLanded = null;
     }
+
+
+
+
+
+
+
 
     IEnumerator AnimateAppearance()
     {

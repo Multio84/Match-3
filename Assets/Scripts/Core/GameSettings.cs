@@ -17,6 +17,9 @@ public class GameSettings : ScriptableObject
     [Tooltip("Duration of falling chip animation in seconds.")]
     public float chipFallDuration = 0.4f;
 
+    [Tooltip("Duration of falling chip animation in seconds.")]
+    public float chipFallStartSpeed = 100f;
+
     [Tooltip("Gravity for falling chip: falling speed factor.")]
     public float chipFallGravity = 2;
 
