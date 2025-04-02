@@ -48,11 +48,11 @@ public class LevelGenerator : MonoBehaviour, IInitializer
         }
     }
 
-    void SpawnFieldCell(Vector2Int cellPos)
+    void SpawnFieldCell(Vector2Int cell)
     {
-        GameObject cell = Instantiate(cellPrefab, gf.GetCellWorldPos(cellPos), Quaternion.identity);
-        cell.transform.SetParent(cellsRoot.transform);
-        cell.name = "Cell_" + cellPos.x.ToString() + "_" + cellPos.y.ToString();
+        GameObject cellObj = Instantiate(cellPrefab, gf.GetCellWorldPos(cell), Quaternion.identity);
+        cellObj.transform.SetParent(cellsRoot.transform);
+        cellObj.name = "Cell_" + cell.x.ToString() + "_" + cell.y.ToString();
     }
 
     void GenerateGameField()
@@ -81,7 +81,7 @@ public class LevelGenerator : MonoBehaviour, IInitializer
 
         Chip chip = chipObj.GetComponent<Chip>();
         chip.name = "Chip_" + chip.Color.ToString();
-        //chip.name = "Chip_" + cellPos.x.ToString() + "_" + cellPos.y.ToString();
+        //chip.name = "Chip_" + cell.x.ToString() + "_" + cell.y.ToString();
         chip.Init(settings, gf, swapHandler, cellPos);
 
         return chip;

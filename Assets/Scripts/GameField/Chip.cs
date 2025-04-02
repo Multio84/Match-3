@@ -57,6 +57,7 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
     public event Action<Chip> OnDeathCompleted;
     //public event Action<Chip, Vector2Int, bool> SwapRequested;
 
+    float fallDuration = 0.3f;
 
     public virtual void Init(GameSettings gs, GameField gf, SwapHandler sh, Vector2Int cellPos)
     {
@@ -158,40 +159,17 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
         StartCoroutine(AnimateFall(targetPos));
     }
 
-    //IEnumerator AnimateFall(Vector3 targetPos)
-    //{
-    //    Vector3 startPos = transform.position;
-
-    //    float elapsedTime = 0;
-
-    //    while (elapsedTime < fallDuration)
-    //    {
-    //        float t = Mathf.Pow(elapsedTime / fallDuration, fallGravity);
-    //        transform.position = Vector3.Lerp(startPos, targetPos, t);
-    //        elapsedTime += Time.deltaTime;
-    //        yield return null;
-    //    }
-
-    //    transform.position = targetPos;
-
-    //    OnChipLanded?.Invoke();
-    //    OnChipLanded = null;
-    //}
-
-
-
-
     IEnumerator AnimateFall(Vector3 targetPos)
     {
-        float fallSpeed = startFallSpeed;
+        Vector3 startPos = transform.position;
 
-        while (Vector3.Distance(transform.position, targetPos) > 10f)
+        float elapsedTime = 0;
+
+        while (elapsedTime < fallDuration)
         {
-            fallSpeed += fallGravity * Time.deltaTime;
-            float step = fallSpeed * Time.deltaTime;
-
-            transform.position = Vector3.MoveTowards(transform.position, targetPos, step);
-
+            float t = Mathf.Pow(elapsedTime / fallDuration, fallGravity);
+            transform.position = Vector3.Lerp(startPos, targetPos, t);
+            elapsedTime += Time.deltaTime;
             yield return null;
         }
 
@@ -200,6 +178,29 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
         OnChipLanded?.Invoke();
         OnChipLanded = null;
     }
+
+
+
+
+    //IEnumerator AnimateFall(Vector3 targetPos)
+    //{
+    //    float fallSpeed = startFallSpeed;
+
+    //    while (Vector3.Distance(transform.position, targetPos) > 10f)
+    //    {
+    //        fallSpeed += fallGravity * Time.deltaTime;
+    //        float step = fallSpeed * Time.deltaTime;
+
+    //        transform.position = Vector3.MoveTowards(transform.position, targetPos, step);
+
+    //        yield return null;
+    //    }
+
+    //    transform.position = targetPos;
+
+    //    OnChipLanded?.Invoke();
+    //    OnChipLanded = null;
+    //}
 
 
 

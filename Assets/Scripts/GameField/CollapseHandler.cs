@@ -39,10 +39,50 @@ public class CollapseHandler : SettingsSubscriber, IInitializer
         fieldWidth = Settings.width;
     }
 
+    //public async void CollapseChips()
+    //{
+    //    int iteration = 0;
+    //    int maxIterations = fieldHeight * 10;    // protection from the infinite loop
+
+    //    while (iteration < maxIterations)
+    //    {
+    //        if (iteration > fieldHeight)
+    //        {
+    //            Debug.LogWarning("CollapseHandler: Attempt to drop more chips, than level's height can hold.");
+    //        }
+
+    //        Dictionary<Vector2Int, Chip> chipsRowToFall = CollectChipsToFall();
+    //        if (chipsRowToFall.Count == 0)
+    //        {
+    //            //Debug.Log("No more chips to fall were found.");
+    //            break;
+    //        }
+
+    //        gf.SyncFallingChipsWithBoard(chipsRowToFall);
+    //        StartCoroutine(DropChips(chipsRowToFall));
+    //        await Task.Delay(chipsFallDelay);
+
+    //        iteration++;
+    //    }
+    //}
+
     public async void CollapseChips()
     {
+        CollectFallingQueue();
+
+        while (chipsToFall.Count > 0)
+        {
+            var chipsRow = chipsToFall.Dequeue();
+            StartCoroutine(DropChips(chipsRow));
+
+            await Task.Delay(chipsFallDelay);
+        }
+    }
+
+    void CollectFallingQueue()
+    {
         int iteration = 0;
-        int maxIterations = fieldHeight * 10;    // protection from the infinite loop
+        int maxIterations = fieldHeight * 2;    // protection from the infinite loop
 
         while (iteration < maxIterations)
         {
@@ -51,20 +91,22 @@ public class CollapseHandler : SettingsSubscriber, IInitializer
                 Debug.LogWarning("CollapseHandler: Attempt to drop more chips, than level's height can hold.");
             }
 
-            Dictionary<Vector2Int, Chip> chipsRowsToFall = CollectChipsToFall();
-            if (chipsRowsToFall.Count == 0)
+            Dictionary<Vector2Int, Chip> chipsRowToFall = CollectChipsToFall();
+            if (chipsRowToFall.Count == 0)
             {
                 //Debug.Log("No more chips to fall were found.");
                 break;
             }
 
-            gf.SyncFallingChipsWithBoard(chipsRowsToFall);
-            StartCoroutine(DropChips(chipsRowsToFall));
-            await Task.Delay(chipsFallDelay);
+            gf.SyncFallingChipsWithBoard(chipsRowToFall);
 
+            chipsToFall.Enqueue(chipsRowToFall);
+            
             iteration++;
         }
     }
+
+
 
     // Collects chips, that should fall simultaneously, and their target cells
     Dictionary<Vector2Int, Chip> CollectChipsToFall()
