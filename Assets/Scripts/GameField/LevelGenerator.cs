@@ -34,7 +34,7 @@ public class LevelGenerator : MonoBehaviour, IInitializer
     public void GenerateLevel()
     {
         GenerateFieldBack();
-        GenerateGameField();
+        GenerateBoard();
     }
 
     void GenerateFieldBack()
@@ -55,7 +55,7 @@ public class LevelGenerator : MonoBehaviour, IInitializer
         cellObj.name = "Cell_" + cell.x.ToString() + "_" + cell.y.ToString();
     }
 
-    void GenerateGameField()
+    void GenerateBoard()
     {
         for (int y = 0; y < fieldHeight; y++)
         {
@@ -69,7 +69,6 @@ public class LevelGenerator : MonoBehaviour, IInitializer
             }
         }
 
-        // generation done
         OnLevelGenerated?.Invoke();
     }
 
@@ -81,7 +80,6 @@ public class LevelGenerator : MonoBehaviour, IInitializer
 
         Chip chip = chipObj.GetComponent<Chip>();
         chip.name = "Chip_" + chip.Color.ToString();
-        //chip.name = "Chip_" + cell.x.ToString() + "_" + cell.y.ToString();
         chip.Init(settings, gf, swapHandler, cellPos);
 
         return chip;
