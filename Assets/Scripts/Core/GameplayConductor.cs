@@ -7,7 +7,7 @@ public class GameplayConductor : MonoBehaviour, IInitializer
     LevelGenerator levelGenerator;
     MatchFinder matchFinder;
     SwapHandler swapHandler;
-    CollapseHandler collapseHandler;
+    CascadeHandler cascadeHandler;
     ChipDestroyer chipDestroyer;
 
 
@@ -16,7 +16,7 @@ public class GameplayConductor : MonoBehaviour, IInitializer
         LevelGenerator lg,
         MatchFinder mf,
         SwapHandler sh,
-        CollapseHandler ch,
+        CascadeHandler ch,
         ChipDestroyer cd
         )
     {
@@ -24,7 +24,7 @@ public class GameplayConductor : MonoBehaviour, IInitializer
         levelGenerator = lg;
         matchFinder = mf;
         swapHandler = sh;
-        collapseHandler = ch;
+        cascadeHandler = ch;
         chipDestroyer = cd;
     }
 
@@ -32,7 +32,7 @@ public class GameplayConductor : MonoBehaviour, IInitializer
     {
         levelGenerator.OnLevelGenerated += OnLevelGenerated;
         chipDestroyer.OnMatchesCleared += OnMatchesCleared;
-        collapseHandler.OnCollapseCompleted += OnCollapseCompleted;
+        cascadeHandler.OnCascadeCompleted += OnCascadeCompleted;
         swapHandler.OnSwapSuccessful += OnSwapSuccessful;
     }
 
@@ -40,33 +40,41 @@ public class GameplayConductor : MonoBehaviour, IInitializer
     {
         levelGenerator.OnLevelGenerated -= OnLevelGenerated;
         chipDestroyer.OnMatchesCleared -= OnMatchesCleared;
-        collapseHandler.OnCollapseCompleted -= OnCollapseCompleted;
+        cascadeHandler.OnCascadeCompleted -= OnCascadeCompleted;
         swapHandler.OnSwapSuccessful -= OnSwapSuccessful;
     }
 
     public void StartGame()
     {
+        Debug.Log("Conductor: GameStarted.");
         levelGenerator.GenerateLevel();
     }
 
     void OnLevelGenerated()
-    { 
+    {
+        Debug.Log("Conductor: Level Generated.");
         if (matchFinder.FindMatches(null)) chipDestroyer.ClearMatches();
+        levelGenerator.SpawnNewChips();
+        cascadeHandler.CascadeChips();
     }
 
     void OnMatchesCleared()
     {
-        collapseHandler.CollapseChips();
+        Debug.Log("Conductor: Matches Cleared.");
+        levelGenerator.SpawnNewChips();
+        cascadeHandler.CascadeChips();
     }
 
-    void OnCollapseCompleted()
+    void OnCascadeCompleted()
     {
+        Debug.Log("Conductor: Collapse Completed.");
         if (matchFinder.FindMatches(null))
             chipDestroyer.ClearMatches();
     }
 
     void OnSwapSuccessful()
     {
+        Debug.Log("Conductor: Swap successful.");
         chipDestroyer.ClearMatches();
     }
 

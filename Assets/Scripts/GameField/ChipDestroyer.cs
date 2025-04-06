@@ -1,61 +1,51 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 
 public class ChipDestroyer : MonoBehaviour
 {
     GameField gf;
-    CollapseHandler collapseHandler;
 
     int chipsToDelete = 0;  // number of chips to be deleted in current iteration
     public event Action OnMatchesCleared;
 
 
-    public void Setup(GameField gf, CollapseHandler ch)
+    public void Setup(GameField gf)
     {
         this.gf = gf;
-        collapseHandler = ch;
     }
 
-    // destroy the matched chips
     public void ClearMatches()
     {
-        chipsToDelete = 0;
-        if (gf.IsBoardNullOrEmpty())
-        {
-            Debug.Log("ChipDestroyer: No chips to delete.");
-            return;
-        }
-        foreach (var chip in gf.BoardEnumerable)
-        {
-            if (chip is not null && chip.IsMatched)
-            {
-                chip.OnDeathCompleted -= HandleChipDeath;   // to exclude double subscription
-                chip.OnDeathCompleted += HandleChipDeath;
+        List<Chip> chips = gf.CollectChipsToDelete();
+        chipsToDelete = chips.Count;
+        //Debug.Log("ChipDestroyer: Chips to be deleted now = " + chipsToDelete);
 
-                chipsToDelete++;
-                chip.Die();
-            }
+        foreach (var chip in chips)
+        {
+            chip.OnDeathCompleted += HandleChipDeath;
+            chip.Die();
         }
+
         //Debug.Log($"Chips sent to die: {chipsToDelete}");
-        collapseHandler.totalChipsToFallCount = chipsToDelete;
     }
 
     void HandleChipDeath(Chip chip)
     {
-        if (gf.IsChipCellActual(chip))
+        if (!gf.DeleteChip(chip.Cell))
         {
-            gf.SetChip(chip.Cell, null);
-            //Debug.Log($"Chip_{chip} removed successfully.");
+            Debug.Log("HandleChipDeath: chip wasn't deleted.");
+            return;
         }
-
-        UnsubscribeFromChip(chip);
 
         if (chip is null || chip.gameObject is null)
         {
             Debug.LogWarning($"Trying to destroy non-existing chip.");
             return;
         }
+
+        UnsubscribeFromChip(chip);
 
         Destroy(chip.gameObject);
         chip = null;
@@ -68,7 +58,11 @@ public class ChipDestroyer : MonoBehaviour
 
     void UnsubscribeFromChip(Chip chip)
     {
-        if (chip is null) return;
+        if (chip is null)
+        {
+            Debug.Log("UnsubscribeFromChip: chip is null, won't be unsubscribed.");
+            return;
+        }
         chip.OnDeathCompleted -= HandleChipDeath;
     }
 

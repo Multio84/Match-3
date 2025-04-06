@@ -31,8 +31,8 @@ public class MatchFinder : MonoBehaviour, IInitializer
 
     public void Init()
     {
-        fieldWidth = settings.width;
-        fieldHeight = settings.height;
+        fieldWidth = settings.fieldWidth;
+        fieldHeight = settings.fieldHeight;
         fieldBottomLeft = Vector2Int.zero;
         fieldTopRight = new Vector2Int(fieldWidth - 1, fieldHeight - 1);
 
@@ -101,7 +101,7 @@ public class MatchFinder : MonoBehaviour, IInitializer
             for (int x = min.x; x <= max.x; x++)
             {
                 // save the first chip without color check
-                Chip currentChip = gf.GetChip(new Vector2Int(x, y));
+                Chip currentChip = gf.GetFieldChip(new Vector2Int(x, y));
                 if (currentChip is null)
                     continue;
 
@@ -115,7 +115,7 @@ public class MatchFinder : MonoBehaviour, IInitializer
                         y + i * direction.y
                     );
 
-                    Chip nextChip = gf.GetChip(checkCell);
+                    Chip nextChip = gf.GetFieldChip(checkCell);
                     if (nextChip is null)
                         break;
                     if (currentChip.Color != nextChip.Color)

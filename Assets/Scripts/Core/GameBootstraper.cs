@@ -11,7 +11,7 @@ public class GameBootstraper : MonoBehaviour
     [SerializeField] LevelGenerator levelGenerator;
     [SerializeField] MatchFinder matchFinder;
     [SerializeField] SwapHandler swapHandler;
-    [SerializeField] CollapseHandler collapseHandler;
+    [SerializeField] CascadeHandler cascadeHandler;
     [SerializeField] ChipDestroyer chipDestroyer;
     IInitializer[] preloadables;
     SettingsSubscriber[] settingsSubscribers;
@@ -36,7 +36,7 @@ public class GameBootstraper : MonoBehaviour
             levelGenerator == null ||
             matchFinder == null ||
             swapHandler == null ||
-            collapseHandler == null ||
+            cascadeHandler == null ||
             chipDestroyer == null)
         {
             Debug.LogError("GameBootstrapper: Some links are not set in the inspector!");
@@ -47,10 +47,10 @@ public class GameBootstraper : MonoBehaviour
         levelGenerator.Setup(settings, gameField, swapHandler);
         matchFinder.Setup(gameField, settings);
         swapHandler.Setup(settings, gameField, matchFinder);
-        collapseHandler.Setup(settings, gameField, levelGenerator);
-        chipDestroyer.Setup(gameField, collapseHandler);
+        cascadeHandler.Setup(settings, gameField);
+        chipDestroyer.Setup(gameField);
         gameProcessor.Setup(gameplayConductor);
-        gameplayConductor.Setup(gameField, levelGenerator, matchFinder, swapHandler, collapseHandler, chipDestroyer);
+        gameplayConductor.Setup(gameField, levelGenerator, matchFinder, swapHandler, cascadeHandler, chipDestroyer);
     }
 
     // inits game settings
@@ -58,7 +58,7 @@ public class GameBootstraper : MonoBehaviour
     {
         settingsSubscribers = new SettingsSubscriber[]
         {
-            collapseHandler,
+            cascadeHandler,
             swapHandler
         };
 
@@ -75,7 +75,7 @@ public class GameBootstraper : MonoBehaviour
         {
             gameField,
             levelGenerator,
-            collapseHandler,
+            cascadeHandler,
             gameplayConductor,
             matchFinder
         };

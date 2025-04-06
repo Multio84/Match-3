@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using static UnityEditor.PlayerSettings;
 
 
 /// <summary>
@@ -51,11 +50,13 @@ public class GameField : MonoBehaviour, IInitializer
     GameSettings settings;
     Grid grid;
 
-    public float cellSize;
-    public int width;
-    public int height;
+    float cellSize;
+    int width;
+    int height;
+    public int boardHeight { get; private set; }
     Chip[,] board;
     public IEnumerable<Chip> BoardEnumerable => board.Cast<Chip>(); // property for iterating chips outside GameField
+    public int[] newChipsColumnsSizes;
 
 
     public void Setup(GameSettings gs)
@@ -66,12 +67,14 @@ public class GameField : MonoBehaviour, IInitializer
     public void Init()
     {
         cellSize = settings.cellSize;
-        width = settings.width;
-        height = settings.height;
+        width = settings.fieldWidth;
+        height = settings.fieldHeight;
+        boardHeight = height * 2;
 
         grid = GetComponent<Grid>();
         grid.cellSize = new Vector3(cellSize, cellSize, 0);
-        board = new Chip[width, height];
+        board = new Chip[width, boardHeight];    // board is 2 times higher than field to store new chips for future collapsing
+        newChipsColumnsSizes = new int[width];
 
         SetGameFieldPos();
     }
@@ -80,9 +83,11 @@ public class GameField : MonoBehaviour, IInitializer
     void SetGameFieldPos()
     {
         var startGameFieldPos = transform.position;
-        Vector3 newPos = new Vector3();
-        newPos.x = (startGameFieldPos.x - cellSize * width) / 2 + cellSize / 2;
-        newPos.y = (startGameFieldPos.y - cellSize * height) / 2 + cellSize / 2;
+        Vector3 newPos = new Vector3(
+            (startGameFieldPos.x - cellSize * width) / 2 + cellSize / 2,
+            (startGameFieldPos.y - cellSize * height) / 2 + cellSize / 2,
+            0
+        );
         transform.position = newPos;
     }
 
@@ -101,8 +106,13 @@ public class GameField : MonoBehaviour, IInitializer
     {
         if (SetChip(cell, chip))
         {
-            if (chip != null)
-                chip.Cell = cell;
+            if (chip is null)
+            { 
+                Debug.LogError("Attempt to set chip null: Failed");
+                return;
+            }
+            
+            chip.Cell = cell;
         }
         else
         {
@@ -115,17 +125,12 @@ public class GameField : MonoBehaviour, IInitializer
     {
         foreach (var entry in chipsToFall)
         {
+            Chip chip = entry.Value;
             Vector2Int chipCell = entry.Value.Cell;
             Vector2Int targetCell = entry.Key;
 
-            // new chip is created outside of the field and is not on board yet,
-            // so it doesn't have to be deleted from board
-            if (IsCellInField(chipCell))
-            {
-                DeleteChip(chipCell);
-            }
-
-            SetChipByNewPos(entry.Value, targetCell);
+            DeleteChip(chipCell);
+            SetChipByNewPos(chip, targetCell);
         }
     }
 
@@ -134,45 +139,93 @@ public class GameField : MonoBehaviour, IInitializer
         Vector2Int cell1 = operation.draggedChip.Cell;
         Vector2Int cell2 = operation.swappedChip.Cell;
 
-        // set chips swapped celPoses
+        // set chips swapped cellPoses
         SetChipByNewPos(operation.swappedChip, cell1);
         SetChipByNewPos(operation.draggedChip, cell2);
     }
 
-    public bool IsChipCellActual(Chip chip)
+    // find the max Y cellPos of all chips to set a search limit of collapse cycle
+    public int GetHighestCellWithChip()
     {
-        if (GetChip(chip.Cell) == chip)
-            return true;
+        if (newChipsColumnsSizes is null || newChipsColumnsSizes.Length == 0)
+        {
+            Debug.LogError("Attempt to process NewChipsColumnsSizes: Invalid");
+            return 0;
+        }
 
-        return false;
+        int highestCell = newChipsColumnsSizes[0];
+        for (int i = 1; i < newChipsColumnsSizes.Length; i++)
+        {
+            if (newChipsColumnsSizes[i] > highestCell)
+            {
+                highestCell = newChipsColumnsSizes[i];
+            }
+        }
+
+        return height + highestCell;
     }
 
-    public bool IsValidChip(Vector2Int cell)
+    public void SetEmptyColumnsSizes()
     {
-        if (GetChip(cell) is null)
+        newChipsColumnsSizes = new int[width];
+        for (int x = 0; x < width; x++)
         {
-            Debug.Log($"Cell {cell} is null.");
+            for (int y = 0; y < height; y++)
+            {
+                if (!IsEmptyCell(new Vector2Int(x, y)))
+                {
+                    newChipsColumnsSizes[x]++;
+                }
+            }
+        }
+    }
+
+    public List<Chip> CollectChipsToDelete()
+    {
+        List<Chip> chips = new List<Chip>();
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                Vector2Int cell = new Vector2Int(x, y);
+                if (IsEmptyCell(cell))
+                {
+                    Chip chip = GetFieldChip(cell);
+                    if (chip.IsMatched)
+                        chips.Add(chip);
+                }
+            }
+        }
+
+        return chips;
+    }
+
+    public bool IsEmptyCell(Vector2Int cell)
+    {
+        if (GetFieldChip(cell) is null)
+        {
+            //Debug.LogWarning($"Cell {cell} is null.");
             return false;
         }
 
         return true;
     }
-
-    public Chip GetChip(Vector2Int cell)
+    public bool DeleteChip(Vector2Int cell)
     {
-        if (IsBoardNullOrEmpty() || !IsCellInField(cell))
+        if (SetChip(cell, null))
         {
-            throw new ArgumentOutOfRangeException(nameof(cell), $"Attempt to GetChip from {cell}: Cell is invalid.");
+            return true;
         }
 
-        return board[cell.x, cell.y];
+        Debug.LogError($"Attempt to DeleteChip in {cell}: Failed.");
+        return false;
     }
 
     public bool SetChip(Vector2Int cell, Chip chip)
     {
         if (!IsValidCell(cell))
         {
-            Debug.LogError($"Attempt to SetChip to {cell}: Cell is invalid.");
+            Debug.LogError($"Attempt to SetChip to {cell}: Failed.");
             return false;
         }
 
@@ -180,49 +233,62 @@ public class GameField : MonoBehaviour, IInitializer
         return true;
     }
 
-    public bool DeleteChip(Vector2Int cell)
+    public Chip GetFieldChip(Vector2Int cell)
     {
-        if (!IsValidCell(cell))
-        {
-            Debug.LogError($"Attempt to DeleteChip in {cell}: Cell is invalid.");
-            return false;
-        }
-
-        board[cell.x, cell.y] = null;
-        return true;
+        return GetChip(cell, IsCellInField, nameof(GetFieldChip));
     }
 
-    public bool IsCellInField(Vector2Int cell)
+    public Chip GetBoardChip(Vector2Int cell)
     {
-        if (board == null)
-        {
-            Debug.LogError("Board is null.");
-            return false;
-        }
-
-        if (cell.x >= 0 && cell.x < board.GetLength(0) &&
-            cell.y >= 0 && cell.y < board.GetLength(1))
-        {
-            return true;
-        }
-
-        return false;
+        return GetChip(cell, IsCellInBoard, nameof(GetBoardChip));
     }
 
-    bool IsValidCell(Vector2Int cell)
+    Chip GetChip(Vector2Int cell, Func<Vector2Int, bool> isValidCell, string methodName)
     {
-        if (board is null || !IsCellInField(cell))
+        if (IsBoardNullOrEmpty() || !isValidCell(cell))
         {
-            Debug.LogError($"Chek cell {cell}: Invalid.");
-            return false;
+            throw new ArgumentOutOfRangeException(nameof(cell),
+                $"Attempt to {methodName} in {cell}: Failed.");
         }
 
-        return true;
+        return board[cell.x, cell.y];
     }
 
     public bool IsBoardNullOrEmpty()
     {
         return board is null || board.Length == 0;
+    }
+
+    bool IsValidCell(Vector2Int cell)
+    {
+        if (board is null || !IsCellInBoard(cell))
+        {
+            Debug.LogError($"Check cell {cell}: Invalid.");
+            return false;
+        }
+
+        return true;
+    }
+
+    public bool IsCellInField(Vector2Int cell)
+    {
+        return IsCellWithinBounds(cell, width, height);
+    }
+
+    public bool IsCellInBoard(Vector2Int cell)
+    {
+        return IsCellWithinBounds(cell, width, boardHeight);
+    }
+
+    bool IsCellWithinBounds(Vector2Int cell, int width, int height)
+    {
+        if (cell.x >= 0 && cell.x < width &&
+            cell.y >= 0 && cell.y < height)
+        {
+            return true;
+        }
+
+        return false;
     }
 
     public Vector2Int GetCellFieldPos(Vector3 worldPos)
@@ -236,7 +302,4 @@ public class GameField : MonoBehaviour, IInitializer
     {
         return grid.CellToWorld(new Vector3Int(cell.x, cell.y, 0));
     }
-
-
-
 }

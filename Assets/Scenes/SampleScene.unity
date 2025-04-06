@@ -155,7 +155,7 @@ MonoBehaviour:
   levelGenerator: {fileID: 1399788286}
   matchFinder: {fileID: 1762809759}
   swapHandler: {fileID: 225914032}
-  collapseHandler: {fileID: 615938986}
+  cascadeHandler: {fileID: 615938986}
   chipDestroyer: {fileID: 1321025190}
 --- !u!4 &54237058
 Transform:
@@ -246,9 +246,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a64dbe4fdf03411488376842f2236ce1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cellSize: 0
-  width: 7
-  height: 10
+  newChipsColumnsSizes: 
 --- !u!4 &442388761
 Transform:
   m_ObjectHideFlags: 0
@@ -401,7 +399,7 @@ GameObject:
   - component: {fileID: 615938985}
   - component: {fileID: 615938986}
   m_Layer: 0
-  m_Name: CollapseHandler
+  m_Name: CascadeHandler
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -434,6 +432,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 01f0054febead83468e7fdbe1e427aff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  maxYWithChip: 0
   totalChipsToFallCount: 0
 --- !u!1 &772855902
 GameObject:
@@ -744,7 +743,6 @@ MonoBehaviour:
   - {fileID: 6528617245901053662, guid: 9b9a47101da6bd8458435b1233f2a621, type: 3}
   - {fileID: 4550339644053309163, guid: 0c0ff3632baae8148b75e840b2d893e8, type: 3}
   - {fileID: 4625192822599467950, guid: 6b05d5949c48d3c40b9cd38b68fce623, type: 3}
-  - {fileID: 2514946870569029913, guid: 798330266e198b546a9ac3c840852667, type: 3}
   cellsRoot: {fileID: 1277953088}
 --- !u!1 &1484995264
 GameObject:
@@ -1000,6 +998,6 @@ SceneRoots:
   - {fileID: 54237058}
   - {fileID: 1631335322}
   - {fileID: 1484995266}
+  - {fileID: 1775396824}
   - {fileID: 772855903}
   - {fileID: 799705122}
-  - {fileID: 1775396824}

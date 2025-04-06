@@ -180,8 +180,6 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
     }
 
 
-
-
     //IEnumerator AnimateFall(Vector3 targetPos)
     //{
     //    float fallSpeed = startFallSpeed;
@@ -201,12 +199,6 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
     //    OnChipLanded?.Invoke();
     //    OnChipLanded = null;
     //}
-
-
-
-
-
-
 
 
     IEnumerator AnimateAppearance()
@@ -230,6 +222,7 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
 
     public void Die()
     {
+        //Debug.Log($"Chip {Cell} sent to die.");
         StartCoroutine(AnimateDeath());
     }
 

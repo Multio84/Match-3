@@ -7,8 +7,8 @@ public class GameSettings : ScriptableObject
 {
     [Header("Field")]
 
-    [Range(5, 7)] public int width = 7;
-    [Range(5, 14)] public int height = 14;
+    [Range(5, 7)] public int fieldWidth = 7;
+    [Range(5, 14)] public int fieldHeight = 14;
     public float cellSize = 140;
 
 

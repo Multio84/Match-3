@@ -14,6 +14,7 @@ public class LevelGenerator : MonoBehaviour, IInitializer
 
     int fieldWidth;
     int fieldHeight;
+    int boardHeight;
 
     public event Action OnLevelGenerated;
 
@@ -27,8 +28,9 @@ public class LevelGenerator : MonoBehaviour, IInitializer
 
     public void Init()
     {
-        fieldWidth = settings.width;
-        fieldHeight = settings.height;
+        fieldWidth = settings.fieldWidth;
+        fieldHeight = settings.fieldHeight;
+        boardHeight = gf.boardHeight;
     }
 
     public void GenerateLevel()
@@ -57,29 +59,46 @@ public class LevelGenerator : MonoBehaviour, IInitializer
 
     void GenerateBoard()
     {
+        //for (int y = fieldHeight; y < boardHeight; y++)
         for (int y = 0; y < fieldHeight; y++)
         {
             for (int x = 0; x < fieldWidth; x++)
             {
-                Vector2Int cellPos = new Vector2Int(x, y);
-                Chip chip = SpawnChip(cellPos);
+                Chip chip = SpawnChip(new Vector2Int(x, y));
                 chip.IsVisible = true;
-                if (!gf.SetChipByItsPos(chip))
-                    Debug.LogWarning("Attempt to spawn a chip outside the GameField: chip wasn't synchronised");
+                gf.SetChipByItsPos(chip);
             }
         }
 
         OnLevelGenerated?.Invoke();
     }
 
+    // new chips are spawned over gamefield, on the top half of the board
+    public void SpawnNewChips()
+    {
+        gf.SetEmptyColumnsSizes();
+        int[] emptyColumnsSizes = gf.newChipsColumnsSizes;
+        for (int x = 0; x < fieldWidth; x++)
+        {
+            if (emptyColumnsSizes[x] <= 0) continue;
+
+            for (int y = fieldHeight; y < fieldHeight + emptyColumnsSizes[x]; y++)
+            {
+                Chip chip = SpawnChip(new Vector2Int(x, y));
+                chip.IsVisible = true;
+                gf.SetChipByItsPos(chip);
+            }
+        }
+    }
+
     public Chip SpawnChip(Vector2Int cellPos)
     {
         int randomIndex = UnityEngine.Random.Range(0, chipsPrefabs.Length);
-        GameObject chipObj = Instantiate(chipsPrefabs[randomIndex], gf.GetCellWorldPos(cellPos), Quaternion.identity);
-        chipObj.transform.SetParent(transform);
+        GameObject chipGO = Instantiate(chipsPrefabs[randomIndex], gf.GetCellWorldPos(cellPos), Quaternion.identity);
+        chipGO.transform.SetParent(transform);
 
-        Chip chip = chipObj.GetComponent<Chip>();
-        chip.name = "Chip_" + chip.Color.ToString();
+        Chip chip = chipGO.GetComponent<Chip>();
+        //chip.name = "Chip_" + cellPos;
         chip.Init(settings, gf, swapHandler, cellPos);
 
         return chip;
