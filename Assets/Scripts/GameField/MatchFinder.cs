@@ -4,8 +4,8 @@ using UnityEngine;
 
 public class MatchFinder : MonoBehaviour, IInitializer
 {
-    GameField gf;
     GameSettings settings;
+    GameField gf;
 
     int fieldWidth;
     int fieldHeight;
@@ -23,7 +23,7 @@ public class MatchFinder : MonoBehaviour, IInitializer
     HashSet<Chip> chipsToCheck;   // chips in line, that should be checked for match
 
 
-    public void Setup(GameField gf, GameSettings gs)
+    public void Setup(GameSettings gs, GameField gf)
     {
         this.gf = gf;
         settings = gs;

@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using static UnityEngine.GraphicsBuffer;
 
 
 public enum ChipColor
@@ -12,6 +13,14 @@ public enum ChipColor
     Red,
     Purple,
     White
+}
+
+enum ChipState
+{
+    Idle,
+    Falling,
+    Swaping,
+    Destroying
 }
 
 [RequireComponent(typeof(SpriteRenderer))]
@@ -57,7 +66,7 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
     public event Action<Chip> OnDeathCompleted;
     //public event Action<Chip, Vector2Int, bool> SwapRequested;
 
-    float fallDuration = 0.3f;
+    //float fallDuration = 0.3f;
 
     public virtual void Init(GameSettings gs, GameField gf, SwapHandler sh, Vector2Int cellPos)
     {
@@ -159,47 +168,54 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
         StartCoroutine(AnimateFall(targetPos));
     }
 
-    IEnumerator AnimateFall(Vector3 targetPos)
+    // Old fall animation, based on time
+    //IEnumerator AnimateFall(Vector3 targetPos)
+    // {
+    //     Vector3 startPos = transform.position;
+
+    //     float elapsedTime = 0;
+
+    //     while (elapsedTime < fallDuration)
+    //     {
+    //         float t = Mathf.Pow(elapsedTime / fallDuration, fallGravity);
+    //         transform.position = Vector3.Lerp(startPos, targetPos, t);
+    //         elapsedTime += Time.deltaTime;
+    //         yield return null;
+    //     }
+
+    //     transform.position = targetPos;
+
+    //     OnChipLanded?.Invoke();
+    //     OnChipLanded = null;
+    // }
+
+    private IEnumerator AnimateFall(Vector3 targetPos)
     {
-        Vector3 startPos = transform.position;
+        float currentY = transform.position.y;
+        float verticalVelocity = startFallSpeed;
 
-        float elapsedTime = 0;
-
-        while (elapsedTime < fallDuration)
+        // Пока текущая позиция выше целевой
+        while (currentY > targetPos.y)
         {
-            float t = Mathf.Pow(elapsedTime / fallDuration, fallGravity);
-            transform.position = Vector3.Lerp(startPos, targetPos, t);
-            elapsedTime += Time.deltaTime;
+            float deltaTime = Time.deltaTime;
+            // Увеличиваем скорость за счёт гравитации
+            verticalVelocity += fallGravity * deltaTime;
+            // Вычитаем пройденное расстояние из позиции по Y
+            currentY -= verticalVelocity * deltaTime;
+
+            // Проверяем, не опустились ли уже ниже целевой позиции
+            if (currentY < targetPos.y)
+                currentY = targetPos.y;
+
+            // Обновляем позицию объекта (оставляем X и Z без изменений)
+            transform.position = new Vector3(transform.position.x, currentY, transform.position.z);
+
             yield return null;
         }
 
-        transform.position = targetPos;
-
+        // Объект достиг целевой позиции – можно вызвать событие
         OnChipLanded?.Invoke();
-        OnChipLanded = null;
     }
-
-
-    //IEnumerator AnimateFall(Vector3 targetPos)
-    //{
-    //    float fallSpeed = startFallSpeed;
-
-    //    while (Vector3.Distance(transform.position, targetPos) > 10f)
-    //    {
-    //        fallSpeed += fallGravity * Time.deltaTime;
-    //        float step = fallSpeed * Time.deltaTime;
-
-    //        transform.position = Vector3.MoveTowards(transform.position, targetPos, step);
-
-    //        yield return null;
-    //    }
-
-    //    transform.position = targetPos;
-
-    //    OnChipLanded?.Invoke();
-    //    OnChipLanded = null;
-    //}
-
 
     IEnumerator AnimateAppearance()
     {

@@ -45,7 +45,7 @@ public class GameBootstraper : MonoBehaviour
 
         gameField.Setup(settings);
         levelGenerator.Setup(settings, gameField, swapHandler);
-        matchFinder.Setup(gameField, settings);
+        matchFinder.Setup(settings, gameField);
         swapHandler.Setup(settings, gameField, matchFinder);
         cascadeHandler.Setup(settings, gameField);
         chipDestroyer.Setup(gameField);
