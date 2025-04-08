@@ -10,6 +10,12 @@ public class SwapOperation
 
     public SwapOperation(Chip draggedChip, Chip swappedChip, Vector2Int direction, bool isReverse)
     {
+        draggedChip.SetState(ChipState.Swapping);
+        swappedChip.SetState(ChipState.Swapping);
+
+        Debug.Log($"SwapOperation: DraggedChip state = {draggedChip.GetState()}, " +
+            $"SwappedShip state = {swappedChip.GetState()}");
+
         this.draggedChip = draggedChip;
         this.swappedChip = swappedChip;
 
@@ -19,13 +25,15 @@ public class SwapOperation
         else
             this.direction = direction;
 
-        this.draggedChip.IsSwapping = true;
-        this.swappedChip.IsSwapping = true;
+        //this.draggedChip.IsSwapping = true;
+        //this.swappedChip.IsSwapping = true;
     }
 
     public void Stop()
     {
-        draggedChip.IsSwapping = false;
-        swappedChip.IsSwapping = false;
+        draggedChip.SetState(ChipState.Idle);
+        swappedChip.SetState(ChipState.Idle);
+        //draggedChip.IsSwapping = false;
+        //swappedChip.IsSwapping = false;
     }
 }

@@ -1,8 +1,8 @@
 using System;
 using System.Collections;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using static UnityEngine.GraphicsBuffer;
 
 
 public enum ChipColor
@@ -15,11 +15,12 @@ public enum ChipColor
     White
 }
 
-enum ChipState
-{
-    Idle,
+public enum ChipState
+{ 
+    Idle,       // is not in any action
     Falling,
-    Swaping,
+    Dragging,   // being dragged by player
+    Swapping,    // automatic swap process started
     Destroying
 }
 
@@ -33,6 +34,7 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
     protected SpriteRenderer sr;
 
     public ChipColor Color;
+    public ChipState State { get; set; }
     protected Vector3 startDragPos;
     public Vector2Int Cell { get; set; }
 
@@ -78,6 +80,7 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
         sr = GetComponent<SpriteRenderer>();
 
         Cell = cellPos;
+        State = ChipState.Idle;
         IsVisible = false;
         IsSwapping = false;
 
@@ -98,28 +101,31 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
 
     public void OnPointerDown(PointerEventData eventData)
     {
-        if (IsSwapping) return;
-        IsInAction = true;
+        if (HasState(ChipState.Idle))
+            SetState(ChipState.Dragging);
+        else
+            return;
+
         startDragPos = ScreenToWorldPos(eventData.position);
-        isDragging = true;
-        //Debug.Log("Pointer DOWN on " + Color);
+
+        //isDragging = true;
+        Debug.Log("Pointer DOWN, State is " + State);
     }
 
     public void OnPointerUp(PointerEventData eventData)
     {
-        isDragging = false;
-        //Debug.Log("Pointer UP on " + Color);
-    }
+        if (!HasState(ChipState.Swapping))
+            SetState(ChipState.Idle);
 
-    Vector3 ScreenToWorldPos(Vector3 screenPosition)
-    {
-        return renderCamera.ScreenToWorldPoint(screenPosition);
+        //isDragging = false;
+        Debug.Log("Pointer UP, State is " + State);
     }
 
     public void OnDrag(PointerEventData eventData)
     {
-        if (!isDragging) return;
-        if (IsSwapping) return;
+        //if (!isDragging) return;
+        //if (IsSwapping) return;
+        if (!HasState(ChipState.Dragging)) return;
 
         Vector3 currentDragPosition = ScreenToWorldPos(eventData.position);
         Vector3 dragDelta = currentDragPosition - startDragPos;
@@ -251,5 +257,28 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
 #endif
         //SwapRequested = null;
         OnDeathCompleted?.Invoke(this);
+    }
+
+    public ChipState GetState()
+    {
+        return State;
+    }
+
+    public bool HasState(ChipState state)
+    {
+        return State == state;
+    }
+
+    public void SetState(ChipState newState)
+    {
+        if (State != newState)
+        {
+            State = newState;
+        }
+    }
+
+    Vector3 ScreenToWorldPos(Vector3 screenPosition)
+    {
+        return renderCamera.ScreenToWorldPoint(screenPosition);
     }
 }

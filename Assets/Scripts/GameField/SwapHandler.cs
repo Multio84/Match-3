@@ -33,7 +33,7 @@ public class SwapHandler : SettingsSubscriber
         SwapOperation operation = GetSwapOperation(chip, direction, isReverse);
         if (operation is null)
         {
-            Debug.Log("Swap operation is null.");
+            Debug.Log("SwapOperation is null: Swap declined.");
             return;
         }
         StartCoroutine(AnimateSwap(operation));
@@ -42,18 +42,29 @@ public class SwapHandler : SettingsSubscriber
     SwapOperation GetSwapOperation(Chip chip, Vector2Int direction, bool isReverse)
     {
         Vector2Int targetCell = chip.Cell + direction;   // find adjacent cell to swap with chip in it
-        if (!gf.IsEmptyCell(targetCell))
+
+        if (!gf.IsCellInField(targetCell)) return null;
+
+        Chip swappedChip = gf.GetFieldChip(targetCell);
+        if (swappedChip is null) return null;
+
+        if ((swappedChip.HasState(ChipState.Idle) && !isReverse) ||
+            (swappedChip.HasState(ChipState.Swapping) && isReverse))
         {
-            Debug.Log("Attempt to make swap with invalid chip.");
+            return new SwapOperation(
+                chip,
+                gf.GetFieldChip(targetCell),
+                direction,
+                isReverse
+            );
+        }
+        else
+        {
+            Debug.Log("Attempt to swap with inappropriate chip. SwappedChip state is " + swappedChip.GetState());
             return null;
         }
 
-        return new SwapOperation(
-            chip,
-            gf.GetFieldChip(targetCell),
-            direction,
-            isReverse
-        );
+
     }
 
     // animates 2 chips swap
