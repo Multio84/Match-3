@@ -7,7 +7,8 @@ public class ChipDestroyer : MonoBehaviour
 {
     GameField gf;
 
-    int chipsToDelete = 0;  // number of chips to be deleted in current iteration
+    int chipsToDelete;  // number of chips to be deleted in current iteration
+
     public event Action OnMatchesCleared;
 
 
@@ -25,6 +26,7 @@ public class ChipDestroyer : MonoBehaviour
         foreach (var chip in chips)
         {
             chip.OnDeathCompleted += HandleChipDeath;
+            chip.SetState(ChipState.Destroying);
             chip.Die();
         }
 

@@ -102,7 +102,7 @@ public class MatchFinder : MonoBehaviour, IInitializer
             {
                 // save the first chip without color check
                 Chip currentChip = gf.GetFieldChip(new Vector2Int(x, y));
-                if (currentChip is null)
+                if (!ChipCanBeMatched(currentChip))
                     continue;
 
                 chipsToCheck.Clear();
@@ -116,7 +116,7 @@ public class MatchFinder : MonoBehaviour, IInitializer
                     );
 
                     Chip nextChip = gf.GetFieldChip(checkCell);
-                    if (nextChip is null)
+                    if (!ChipCanBeMatched(nextChip))
                         break;
                     if (currentChip.Color != nextChip.Color)
                         break;
@@ -127,7 +127,9 @@ public class MatchFinder : MonoBehaviour, IInitializer
                 if (chipsToCheck.Count >= minMatchSize)
                 {
                     foreach (Chip chip in chipsToCheck)
+                    {
                         chip.IsMatched = true;
+                    }
                     matchesFound = true;
                 }
             }
@@ -136,4 +138,14 @@ public class MatchFinder : MonoBehaviour, IInitializer
         return matchesFound;
     }
     
+    bool ChipCanBeMatched(Chip chip)
+    {
+        if (chip is null)
+            return false;
+
+        if (!chip.IsIdle() && !chip.HasState(ChipState.Swapped))
+            return false;
+
+        return true;
+    }
 }

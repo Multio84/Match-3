@@ -85,6 +85,7 @@ public class LevelGenerator : MonoBehaviour, IInitializer
             for (int y = fieldHeight; y < fieldHeight + emptyColumnsSizes[x]; y++)
             {
                 Chip chip = SpawnChip(new Vector2Int(x, y));
+                chip.SetBlocked();
                 chip.IsVisible = true;
                 gf.SetChipByItsPos(chip);
             }

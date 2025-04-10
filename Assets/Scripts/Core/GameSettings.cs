@@ -27,7 +27,7 @@ public class GameSettings : ScriptableObject
     public float chipsFallDelay = 0.01f;
 
     [Tooltip("Dragged chip distance after which chip moves by itself.")]
-    public float chipDragThreshold { get { return cellSize / 5f; } }
+    public int chipDragThreshold { get { return (int)cellSize / 5; } }
 
     [Tooltip("Duration in seconds of chip's death animation.")]
     public float chipDeathDuration = 2f;

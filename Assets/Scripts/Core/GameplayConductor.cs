@@ -46,13 +46,13 @@ public class GameplayConductor : MonoBehaviour, IInitializer
 
     public void StartGame()
     {
-        Debug.Log("Conductor: GameStarted.");
+        //Debug.Log("Conductor: GameStarted.");
         levelGenerator.GenerateLevel();
     }
 
     void OnLevelGenerated()
     {
-        Debug.Log("Conductor: Level Generated.");
+        //Debug.Log("Conductor: Level Generated.");
         if (matchFinder.FindMatches(null)) chipDestroyer.ClearMatches();
         levelGenerator.SpawnNewChips();
         cascadeHandler.CascadeChips();
@@ -60,21 +60,21 @@ public class GameplayConductor : MonoBehaviour, IInitializer
 
     void OnMatchesCleared()
     {
-        Debug.Log("Conductor: Matches Cleared.");
+        //Debug.Log("Conductor: Matches Cleared.");
         levelGenerator.SpawnNewChips();
         cascadeHandler.CascadeChips();
     }
 
     void OnCascadeCompleted()
     {
-        Debug.Log("Conductor: Collapse Completed.");
+        //Debug.Log("Conductor: Collapse Completed.");
         if (matchFinder.FindMatches(null))
             chipDestroyer.ClearMatches();
     }
 
     void OnSwapSuccessful()
     {
-        Debug.Log("Conductor: Swap successful.");
+        //Debug.Log("Conductor: Swap successful.");
         chipDestroyer.ClearMatches();
     }
 

@@ -17,7 +17,7 @@ MonoBehaviour:
   cellSize: 140
   chipFallDuration: 5
   chipFallStartSpeed: 500
-  chipFallGravity: 2
+  chipFallGravity: 5000
   chipsFallDelay: 0.025
   chipDeathDuration: 0.15
   chipSwapDuration: 0.2

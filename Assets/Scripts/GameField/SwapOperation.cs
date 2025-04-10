@@ -13,9 +13,6 @@ public class SwapOperation
         draggedChip.SetState(ChipState.Swapping);
         swappedChip.SetState(ChipState.Swapping);
 
-        Debug.Log($"SwapOperation: DraggedChip state = {draggedChip.GetState()}, " +
-            $"SwappedShip state = {swappedChip.GetState()}");
-
         this.draggedChip = draggedChip;
         this.swappedChip = swappedChip;
 
@@ -24,16 +21,13 @@ public class SwapOperation
             this.direction = direction *= -1;
         else
             this.direction = direction;
-
-        //this.draggedChip.IsSwapping = true;
-        //this.swappedChip.IsSwapping = true;
     }
 
     public void Stop()
     {
-        draggedChip.SetState(ChipState.Idle);
-        swappedChip.SetState(ChipState.Idle);
-        //draggedChip.IsSwapping = false;
-        //swappedChip.IsSwapping = false;
+        //draggedChip.SetBlocked();
+        //swappedChip.SetBlocked();
+        draggedChip.SetIdle();
+        swappedChip.SetIdle();
     }
 }

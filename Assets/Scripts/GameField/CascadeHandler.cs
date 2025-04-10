@@ -59,6 +59,7 @@ public class CascadeHandler : SettingsSubscriber, IInitializer
         {
             totalChipsToFallCount += chipsRow.Count;
         }
+        Debug.Log("CountChipsToFall: totalChipsToFallCount = " + totalChipsToFallCount);
     }
 
     void CollectFallingQueue()
@@ -67,7 +68,7 @@ public class CascadeHandler : SettingsSubscriber, IInitializer
 
         while (i < fieldHeight)
         {
-            Dictionary<Vector2Int, Chip> chipsRowToFall = CollectChipRowsToFall();
+            Dictionary<Vector2Int, Chip> chipsRowToFall = CollectChipsRowToFall();
             if (chipsRowToFall.Count == 0)
             {
                 //Debug.Log("No more chips to fall were found.");
@@ -82,7 +83,7 @@ public class CascadeHandler : SettingsSubscriber, IInitializer
     }
 
     // Collects chips, that should fall simultaneously, and their target cells
-    Dictionary<Vector2Int, Chip> CollectChipRowsToFall()
+    Dictionary<Vector2Int, Chip> CollectChipsRowToFall()
     {
         Dictionary<Vector2Int, Chip> chipsRow = new Dictionary<Vector2Int, Chip>();
 
@@ -102,8 +103,14 @@ public class CascadeHandler : SettingsSubscriber, IInitializer
                 }
                 else if (bottomCell.HasValue)
                 {
-                    if (!chipsRow.TryAdd(bottomCell.Value, currentChip))
-                        Debug.LogError($"Duplicate target cell {bottomCell.Value} while adding existing chip {currentChip}");
+                    if (chipsRow.TryAdd(bottomCell.Value, currentChip))
+                    {
+                        currentChip.SetState(ChipState.Falling);
+                    }
+                    else
+                    {
+                        Debug.LogError($"CascadeHandler: Duplicate target cell {bottomCell.Value} while adding chip");
+                    }
                     break;
                 }
             }
@@ -120,7 +127,7 @@ public class CascadeHandler : SettingsSubscriber, IInitializer
             Chip chip = entry.Value;
 
             chip.OnChipLanded += HandleChipLanded;
-            //Debug.Log($"Cell at {chip.Cell} wwas subsciber to HandleChipLanded");
+            Debug.Log($"Cell at {chip.Cell} was subscibed to HandleChipLanded");
 
             Vector3 targetWorldPos = gf.GetCellWorldPos(targetCell);
             chip.Fall(targetWorldPos);
@@ -128,9 +135,12 @@ public class CascadeHandler : SettingsSubscriber, IInitializer
         yield return null;
     }
 
-    public void HandleChipLanded()
+    public void HandleChipLanded(Chip chip)
     {
+        chip.OnChipLanded -= HandleChipLanded;
+
         totalChipsToFallCount--;
+        Debug.Log($"Chip {chip.Cell} handled: totalChipsToFallCount = {totalChipsToFallCount}");
 
         if (totalChipsToFallCount < 0)
         {
@@ -141,6 +151,21 @@ public class CascadeHandler : SettingsSubscriber, IInitializer
         if (totalChipsToFallCount == 0)
             HandleCascadeComplete();
     }
+
+    //public void HandleChipLanded()
+    //{
+    //    totalChipsToFallCount--;
+    //    Debug.Log($"totalChipsToFallCount = {totalChipsToFallCount}");
+
+    //    if (totalChipsToFallCount < 0)
+    //    {
+    //        Debug.LogError($"CascadeHandler: totalChipsToFallCount (= {totalChipsToFallCount}) shouldn't be negative!");
+    //        return;
+    //    }
+
+    //    if (totalChipsToFallCount == 0)
+    //        HandleCascadeComplete();
+    //}
 
     void HandleCascadeComplete()
     {

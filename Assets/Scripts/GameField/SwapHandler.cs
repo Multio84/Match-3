@@ -41,19 +41,20 @@ public class SwapHandler : SettingsSubscriber
 
     SwapOperation GetSwapOperation(Chip chip, Vector2Int direction, bool isReverse)
     {
-        Vector2Int targetCell = chip.Cell + direction;   // find adjacent cell to swap with chip in it
+        Vector2Int targetCell = chip.Cell + direction;  // find adjacent cell to swap with chip in it
 
         if (!gf.IsCellInField(targetCell)) return null;
 
-        Chip swappedChip = gf.GetFieldChip(targetCell);
+        Chip swappedChip = gf.GetFieldChip(targetCell); // a chip to be swapped
         if (swappedChip is null) return null;
 
-        if ((swappedChip.HasState(ChipState.Idle) && !isReverse) ||
-            (swappedChip.HasState(ChipState.Swapping) && isReverse))
+        if ((swappedChip.IsIdle() && !isReverse) ||
+            (swappedChip.HasState(ChipState.Swapping) && isReverse) ||
+            (swappedChip.HasState(ChipState.Swapped) && isReverse))
         {
             return new SwapOperation(
                 chip,
-                gf.GetFieldChip(targetCell),
+                swappedChip,
                 direction,
                 isReverse
             );
@@ -63,8 +64,6 @@ public class SwapHandler : SettingsSubscriber
             Debug.Log("Attempt to swap with inappropriate chip. SwappedChip state is " + swappedChip.GetState());
             return null;
         }
-
-
     }
 
     // animates 2 chips swap
@@ -102,6 +101,9 @@ public class SwapHandler : SettingsSubscriber
             operation.Stop();
             return;
         }
+
+        operation.draggedChip.SetState(ChipState.Swapped);
+        operation.swappedChip.SetState(ChipState.Swapped);
 
         if (matchFinder.FindMatches(operation))
         {

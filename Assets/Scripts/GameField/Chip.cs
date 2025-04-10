@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -17,24 +16,26 @@ public enum ChipColor
 
 public enum ChipState
 { 
-    Idle,       // is not in any action
+    Idle,       // is not in any action, available for interaction
+    Blocked,    // unavailable for interaction
     Falling,
     Dragging,   // being dragged by player
-    Swapping,    // automatic swap process started
+    Swapping,   // in automatic swap process
+    Swapped,    // had been swapped, but swap hadn't been stopped yet
     Destroying
 }
 
 [RequireComponent(typeof(SpriteRenderer))]
-public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDragHandler
+public abstract class Chip : MonoBehaviour, IPointerDownHandler, IDragHandler
 {
     protected GameSettings settings;
-    protected GameField gameField;
+    protected GameField gf;
     protected SwapHandler swapHandler;
     protected Camera renderCamera;
     protected SpriteRenderer sr;
 
     public ChipColor Color;
-    public ChipState State { get; set; }
+    public ChipState State;
     protected Vector3 startDragPos;
     public Vector2Int Cell { get; set; }
 
@@ -64,7 +65,7 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
     protected float fallGravity;
     protected float distanceToAppear;
 
-    public event Action OnChipLanded;
+    public event Action<Chip> OnChipLanded;
     public event Action<Chip> OnDeathCompleted;
     //public event Action<Chip, Vector2Int, bool> SwapRequested;
 
@@ -73,14 +74,14 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
     public virtual void Init(GameSettings gs, GameField gf, SwapHandler sh, Vector2Int cellPos)
     {
         settings = gs;
-        gameField = gf;
+        this.gf = gf;
         swapHandler = sh;
 
         renderCamera = Camera.main;
         sr = GetComponent<SpriteRenderer>();
 
         Cell = cellPos;
-        State = ChipState.Idle;
+        SetIdle();
         IsVisible = false;
         IsSwapping = false;
 
@@ -101,31 +102,33 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
 
     public void OnPointerDown(PointerEventData eventData)
     {
-        if (HasState(ChipState.Idle))
+        //if (GameFieldProcessing.IsProcessing)
+        //    return;
+
+        if (IsIdle())
             SetState(ChipState.Dragging);
         else
             return;
 
         startDragPos = ScreenToWorldPos(eventData.position);
 
-        //isDragging = true;
-        Debug.Log("Pointer DOWN, State is " + State);
+        //Debug.Log("Pointer DOWN, State is " + State);
     }
 
-    public void OnPointerUp(PointerEventData eventData)
-    {
-        if (!HasState(ChipState.Swapping))
-            SetState(ChipState.Idle);
+    //public void OnPointerUp(PointerEventData eventData)
+    //{
+    //    //if (!IsBlocked() &&
+    //    //    !HasState(ChipState.Swapping) &&
+    //    //    !HasState(ChipState.Swapped))
+    //    //    SetIdle();
 
-        //isDragging = false;
-        Debug.Log("Pointer UP, State is " + State);
-    }
+    //    Debug.Log("Pointer UP, State is " + State);
+    //}
 
     public void OnDrag(PointerEventData eventData)
     {
-        //if (!isDragging) return;
-        //if (IsSwapping) return;
-        if (!HasState(ChipState.Dragging)) return;
+        if (!HasState(ChipState.Dragging))
+            return;
 
         Vector3 currentDragPosition = ScreenToWorldPos(eventData.position);
         Vector3 dragDelta = currentDragPosition - startDragPos;
@@ -219,8 +222,10 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
             yield return null;
         }
 
+        SetIdle();
         // ќбъект достиг целевой позиции Ц можно вызвать событие
-        OnChipLanded?.Invoke();
+        Debug.Log($"Chip {Cell} has fallen.");
+        OnChipLanded?.Invoke(this);
     }
 
     IEnumerator AnimateAppearance()
@@ -269,12 +274,33 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
         return State == state;
     }
 
+    public bool IsIdle()
+    {
+        return HasState(ChipState.Idle);
+    }
+
+    public bool IsBlocked()
+    {
+        return HasState(ChipState.Blocked);
+    }
+
     public void SetState(ChipState newState)
     {
         if (State != newState)
         {
             State = newState;
         }
+    }
+
+    public void SetIdle()
+    {
+        SetState(ChipState.Idle);
+    }
+
+    public void SetBlocked()
+    {
+
+        SetState(ChipState.Blocked);
     }
 
     Vector3 ScreenToWorldPos(Vector3 screenPosition)
