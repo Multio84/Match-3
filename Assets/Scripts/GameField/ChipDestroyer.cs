@@ -7,7 +7,8 @@ public class ChipDestroyer : MonoBehaviour
 {
     GameField gf;
 
-    int chipsToDelete;  // number of chips to be deleted in current iteration
+    public List<Chip> chipsToDelete;
+    int chipsToDeleteCount;  // number of chips to be deleted in current iteration
 
     public event Action OnMatchesCleared;
 
@@ -19,18 +20,17 @@ public class ChipDestroyer : MonoBehaviour
 
     public void ClearMatches()
     {
-        List<Chip> chips = gf.CollectChipsToDelete();
-        chipsToDelete = chips.Count;
-        //Debug.Log("ChipDestroyer: Chips to be deleted now = " + chipsToDelete);
+        chipsToDeleteCount = chipsToDelete.Count;
+        //Debug.Log("ChipDestroyer: Chips to be deleted now = " + chipsToDeleteCount);
 
-        foreach (var chip in chips)
+        foreach (var chip in chipsToDelete)
         {
             chip.OnDeathCompleted += HandleChipDeath;
             chip.SetState(ChipState.Destroying);
             chip.Die();
         }
 
-        //Debug.Log($"Chips sent to die: {chipsToDelete}");
+        //Debug.Log($"Chips sent to die: {chipsToDeleteCount}");
     }
 
     void HandleChipDeath(Chip chip)
@@ -51,10 +51,10 @@ public class ChipDestroyer : MonoBehaviour
 
         Destroy(chip.gameObject);
         chip = null;
-        chipsToDelete--;
-        //Debug.Log($"Chips left to die: {chipsToDelete}");
+        chipsToDeleteCount--;
+        //Debug.Log($"Chips left to die: {chipsToDeleteCount}");
 
-        if (chipsToDelete <= 0)
+        if (chipsToDeleteCount <= 0)
             HandleMatchesCleared();
     }
 

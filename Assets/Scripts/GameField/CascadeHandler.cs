@@ -37,6 +37,12 @@ public class CascadeHandler : SettingsSubscriber, IInitializer
         fieldWidth = Settings.fieldWidth;
     }
 
+    public void BlockChipsToFall()
+    {
+        //List<Chip> chipsToFall = gf.GetChipsAboveMatched();
+
+    }
+
     public async void CascadeChips()
     {
         maxYWithChip = gf.GetHighestCellWithChip();

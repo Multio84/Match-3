@@ -180,6 +180,22 @@ public class GameField : MonoBehaviour, IInitializer
         }
     }
 
+    //public List<Chip> GetChipsAboveMatched()
+    //{
+    //    List<Chip> aboveChips = new List<Chip>();
+
+
+    //    for (int y = chipY - 1; y >= 0; y--)
+    //    {
+    //        Chip currentChip = chipsGrid[chipX, y];
+    //        if (currentChip != null)
+    //        {
+    //            aboveChips.Add(currentChip);
+    //        }
+    //    }
+    //    return aboveChips;
+    //}
+
     public List<Chip> CollectChipsToDelete()
     {
         List<Chip> chips = new List<Chip>();
