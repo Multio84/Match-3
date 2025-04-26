@@ -11,7 +11,7 @@ using UnityEngine;
 /// <list type="bullet">
 ///     <item>
 ///         <description>
-///         <c>chip</c> - фишка, объект геймплея.
+///         <c>currentChip</c> - фишка, объект геймплея.
 ///         </description>
 ///     </item>
 ///     <item>
@@ -108,7 +108,7 @@ public class GameField : MonoBehaviour, IInitializer
         {
             if (chip is null)
             { 
-                Debug.LogError("Attempt to set chip null: Failed");
+                Debug.LogError("Attempt to set currentChip null: Failed");
                 return;
             }
             
@@ -120,7 +120,7 @@ public class GameField : MonoBehaviour, IInitializer
         }
     }
 
-    // changes chip's position in array: moves it from start chip's place to the cell
+    // changes currentChip's position in array: moves it from start currentChip's place to the cell
     public void SyncFallingChipsWithBoard(Dictionary<Vector2Int, Chip> chipsToFall)
     {
         foreach (var entry in chipsToFall)
@@ -180,21 +180,34 @@ public class GameField : MonoBehaviour, IInitializer
         }
     }
 
-    //public List<Chip> GetChipsAboveMatched()
-    //{
-    //    List<Chip> aboveChips = new List<Chip>();
+    // collects all chips above the matched ones (that will cascade soon),
+    // to block them before this
+    public HashSet<Chip> GetChipsAboveMatched()
+    {
+        HashSet<Chip> aboveChips = new HashSet<Chip>();
 
+        for (int x = 0; x < width; x++)
+        {
+            bool bottomMatchedCellFound = false;
+            for (int y = 0; y < height; y++)
+            {
+                Chip currentChip = GetFieldChip(new Vector2Int(x, y));
+                if (currentChip is null) continue;
 
-    //    for (int y = chipY - 1; y >= 0; y--)
-    //    {
-    //        Chip currentChip = chipsGrid[chipX, y];
-    //        if (currentChip != null)
-    //        {
-    //            aboveChips.Add(currentChip);
-    //        }
-    //    }
-    //    return aboveChips;
-    //}
+                if (!bottomMatchedCellFound && currentChip.IsMatched)
+                {
+                    bottomMatchedCellFound = true;
+                }
+
+                if (bottomMatchedCellFound && !currentChip.IsMatched)
+                {
+                    aboveChips.Add(currentChip);
+                }
+            }
+        }
+
+        return aboveChips;
+    }
 
     public List<Chip> CollectChipsToDelete()
     {

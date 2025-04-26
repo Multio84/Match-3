@@ -19,7 +19,7 @@ public abstract class SettingsSubscriber : MonoBehaviour
     }
 #endif
 
-    public virtual void UseSettings(SettingsSubscriber subscriber)
+    public void UseSettings(SettingsSubscriber subscriber)
     {
         if (Settings is null)
         {

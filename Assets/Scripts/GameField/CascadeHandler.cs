@@ -37,10 +37,12 @@ public class CascadeHandler : SettingsSubscriber, IInitializer
         fieldWidth = Settings.fieldWidth;
     }
 
-    public void BlockChipsToFall()
+    public void BlockChipsToFall(HashSet<Chip> chipsToFall)
     {
-        //List<Chip> chipsToFall = gf.GetChipsAboveMatched();
-
+        foreach (Chip chip in chipsToFall)
+        {
+            chip.SetState(ChipState.Blocked);
+        }
     }
 
     public async void CascadeChips()

@@ -1,6 +1,7 @@
 using UnityEngine;
 
 
+// Dependency Injection class: exports depencencies to classes. Starts first.
 [DefaultExecutionOrder(-1000)]
 public class GameBootstraper : MonoBehaviour
 {
@@ -13,7 +14,8 @@ public class GameBootstraper : MonoBehaviour
     [SerializeField] SwapHandler swapHandler;
     [SerializeField] CascadeHandler cascadeHandler;
     [SerializeField] ChipDestroyer chipDestroyer;
-    IInitializer[] preloadables;
+    [SerializeField] MainMenuAnimator mainMenuAnimator;
+    IInitializer[] initializables;
     SettingsSubscriber[] settingsSubscribers;
 
 
@@ -23,26 +25,28 @@ public class GameBootstraper : MonoBehaviour
 
         Setup();
         UseSettings();
-        Preload();
+        Init();
     }
 
     // sets dependencies
     void Setup()
     {
-        if (settings == null ||
-            gameProcessor == null ||
-            gameplayConductor == null ||
-            gameField == null ||
-            levelGenerator == null ||
-            matchFinder == null ||
-            swapHandler == null ||
-            cascadeHandler == null ||
-            chipDestroyer == null)
+        if (settings is null ||
+            mainMenuAnimator is null ||
+            gameProcessor is null ||
+            gameplayConductor is null ||
+            gameField is null ||
+            levelGenerator is null ||
+            matchFinder is null ||
+            swapHandler is null ||
+            cascadeHandler is null ||
+            chipDestroyer is null)
         {
             Debug.LogError("GameBootstrapper: Some links are not set in the inspector!");
             return;
         }
 
+        mainMenuAnimator.Setup(settings);
         gameField.Setup(settings);
         levelGenerator.Setup(settings, gameField, swapHandler);
         matchFinder.Setup(settings, gameField);
@@ -58,6 +62,7 @@ public class GameBootstraper : MonoBehaviour
     {
         settingsSubscribers = new SettingsSubscriber[]
         {
+            mainMenuAnimator,
             cascadeHandler,
             swapHandler
         };
@@ -69,9 +74,9 @@ public class GameBootstraper : MonoBehaviour
     }
 
     // launches local processes
-    void Preload()
+    void Init()
     {
-        preloadables = new IInitializer[]
+        initializables = new IInitializer[]
         {
             gameField,
             levelGenerator,
@@ -80,7 +85,7 @@ public class GameBootstraper : MonoBehaviour
             matchFinder
         };
 
-        foreach (var obj in preloadables)
+        foreach (var obj in initializables)
         {
             obj.Init();
         }

@@ -48,7 +48,14 @@ public class GameSettings : ScriptableObject
     public int maxMatchSize = 5;
 
 
+    [Header("GUI")]
+    [Tooltip("Delay in seconds before next MainMenu button starts it's appearing animation.")]
+    public float mainButtonsAnimDelay = 0.2f;
+    [Tooltip("Duration in seconds of MainMenu button appearing animation.")]
+    public float mainButtonsAnimDuration = 1.0f;
+
     public event Action OnSettingsChanged;
+
 
     private void OnValidate()
     {
