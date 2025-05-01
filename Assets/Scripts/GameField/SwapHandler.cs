@@ -6,19 +6,19 @@ using System;
 public class SwapHandler : SettingsSubscriber
 {
     public override GameSettings Settings { get; set; }
-    GameField gf;
+    GameField gameField;
     MatchFinder matchFinder;
 
     float chipSwapDuration;
     float reverseSwapDelay;
 
-    public event Action OnSwapSuccessful;
+    public event Action<bool> OnSwapComplete;
 
 
     public void Setup(GameSettings settings, GameField gf, MatchFinder mf)
     {
         Settings = settings;
-        this.gf = gf;
+        gameField = gf;
         matchFinder = mf;
     }
 
@@ -43,9 +43,9 @@ public class SwapHandler : SettingsSubscriber
     {
         Vector2Int targetCell = chip.Cell + direction;  // find adjacent cell to swap with chip in it
 
-        if (!gf.IsCellInField(targetCell)) return null;
+        if (!gameField.IsCellInField(targetCell)) return null;
 
-        Chip swappedChip = gf.GetFieldChip(targetCell); // a chip to be swapped
+        Chip swappedChip = gameField.GetFieldChip(targetCell); // a chip to be swapped
         if (swappedChip is null) return null;
 
         if ((swappedChip.IsIdle() && !isReverse) ||
@@ -75,7 +75,7 @@ public class SwapHandler : SettingsSubscriber
 
         float elapsedTime = 0;
 
-        // animate chips swap
+        // animate swap
         while (elapsedTime < chipSwapDuration)
         {
             operation.draggedChip.transform.position = Vector3.Lerp(chip1Pos, chip2Pos, elapsedTime / chipSwapDuration);
@@ -94,11 +94,12 @@ public class SwapHandler : SettingsSubscriber
 
     void HandleSwap(SwapOperation operation)
     {
-        gf.UpdateSwappedChips(operation);
+        gameField.UpdateSwappedChips(operation);
 
         if (operation.isReverse)
         {
             operation.Stop();
+            OnSwapComplete?.Invoke(false);
             return;
         }
 
@@ -108,7 +109,7 @@ public class SwapHandler : SettingsSubscriber
         if (matchFinder.FindMatches(operation))
         {
             operation.Stop();
-            OnSwapSuccessful?.Invoke();
+            OnSwapComplete?.Invoke(true);
         }
         else
         {

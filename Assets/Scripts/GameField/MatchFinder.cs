@@ -5,7 +5,7 @@ using UnityEngine;
 public class MatchFinder : MonoBehaviour, IInitializer
 {
     GameSettings settings;
-    GameField gf;
+    GameField gameField;
 
     int fieldWidth;
     int fieldHeight;
@@ -25,7 +25,7 @@ public class MatchFinder : MonoBehaviour, IInitializer
 
     public void Setup(GameSettings gs, GameField gf)
     {
-        this.gf = gf;
+        gameField = gf;
         settings = gs;
     }
 
@@ -101,7 +101,7 @@ public class MatchFinder : MonoBehaviour, IInitializer
             for (int x = min.x; x <= max.x; x++)
             {
                 // save the first chip without color check
-                Chip currentChip = gf.GetFieldChip(new Vector2Int(x, y));
+                Chip currentChip = gameField.GetFieldChip(new Vector2Int(x, y));
                 if (!ChipCanBeMatched(currentChip))
                     continue;
 
@@ -115,7 +115,7 @@ public class MatchFinder : MonoBehaviour, IInitializer
                         y + i * direction.y
                     );
 
-                    Chip nextChip = gf.GetFieldChip(checkCell);
+                    Chip nextChip = gameField.GetFieldChip(checkCell);
                     if (!ChipCanBeMatched(nextChip))
                         break;
                     if (currentChip.Color != nextChip.Color)

@@ -8,12 +8,12 @@ using System;
 public class CascadeHandler : SettingsSubscriber, IInitializer
 {
     public override GameSettings Settings { get; set; }
-    GameField gf;
+    GameField gameField;
 
     int fieldWidth;
     int fieldHeight;
     int chipsFallDelay;
-    public int maxYWithChip;
+    public int lowestEmptyRow;
     public int totalChipsToFallCount = 0;
     Queue<Dictionary<Vector2Int, Chip>> chipsToFall = new Queue<Dictionary<Vector2Int, Chip>>();
 
@@ -23,7 +23,7 @@ public class CascadeHandler : SettingsSubscriber, IInitializer
     public void Setup(GameSettings settings, GameField gf)
     {
         Settings = settings;
-        this.gf = gf;
+        gameField = gf;
     }
 
     public override void ApplyGameSettings()
@@ -45,11 +45,24 @@ public class CascadeHandler : SettingsSubscriber, IInitializer
         }
     }
 
-    public async void CascadeChips()
+    public void StartCascade()
     {
-        maxYWithChip = gf.GetHighestCellWithChip();
+        lowestEmptyRow = gameField.GetLowestEmptyRow();
+        if (lowestEmptyRow < 0)
+            Debug.LogError("Cascade: lowest empty row is over board height.");
         CollectFallingQueue();
         CountChipsToFall();
+        CascadeChips();
+    }
+
+    public async void CascadeChips()
+    {
+        //lowestEmptyRow = gameField.GetLowestEmptyRow();
+        //CollectFallingQueue();
+        //CountChipsToFall();
+
+        if (chipsToFall.Count == 0)
+            Debug.LogWarning("Chips to fall: 0");
 
         while (chipsToFall.Count > 0)
         {
@@ -83,7 +96,7 @@ public class CascadeHandler : SettingsSubscriber, IInitializer
                 break;
             }
 
-            gf.SyncFallingChipsWithBoard(chipsRowToFall);
+            gameField.SyncFallingChipsWithBoard(chipsRowToFall);
             chipsToFall.Enqueue(chipsRowToFall);
             
             i++;
@@ -99,27 +112,36 @@ public class CascadeHandler : SettingsSubscriber, IInitializer
         {
             Vector2Int? bottomCell = null;  // first empty cell (from bottom) in current column
 
-            for (int y = 0; y < maxYWithChip; y++)
+            for (int y = 0; y < lowestEmptyRow; y++)
             {
                 Vector2Int currentCell = new Vector2Int(x, y);
-                Chip currentChip = gf.GetBoardChip(currentCell);
+                Chip currentChip = gameField.GetBoardChip(currentCell);
 
                 if (currentChip is null)
                 {
                     if (bottomCell is null)
                         bottomCell = currentCell;
                 }
-                else if (bottomCell.HasValue)
+                else
                 {
-                    if (chipsRow.TryAdd(bottomCell.Value, currentChip))
+                    if (bottomCell.HasValue)
                     {
-                        currentChip.SetState(ChipState.Falling);
+                        if (!currentChip.IsIdle() && !currentChip.IsBlocked())
+                            break;  // swapping chips should not cascade, so it won't be written as a chip to fall at all
+
+                        if (chipsRow.TryAdd(bottomCell.Value, currentChip))
+                        {
+                            currentChip.SetState(ChipState.Falling);
+                        }
+                        else
+                        {
+                            Debug.LogError($"CascadeHandler: Duplicate target cell {bottomCell.Value} while adding chip");
+                        }
+
+                        break;  // a chip to fall was found.
+                                // Only 1 chip in each column should fall at a moment,
+                                // so we interrupt the search in the column
                     }
-                    else
-                    {
-                        Debug.LogError($"CascadeHandler: Duplicate target cell {bottomCell.Value} while adding chip");
-                    }
-                    break;
                 }
             }
         }
@@ -135,9 +157,9 @@ public class CascadeHandler : SettingsSubscriber, IInitializer
             Chip chip = entry.Value;
 
             chip.OnChipLanded += HandleChipLanded;
-            Debug.Log($"Cell at {chip.Cell} was subscibed to HandleChipLanded");
+            //Debug.Log($"Cell at {chip.Cell} was subscibed to HandleChipLanded");
 
-            Vector3 targetWorldPos = gf.GetCellWorldPos(targetCell);
+            Vector3 targetWorldPos = gameField.GetCellWorldPos(targetCell);
             chip.Fall(targetWorldPos);
         }
         yield return null;
@@ -148,7 +170,7 @@ public class CascadeHandler : SettingsSubscriber, IInitializer
         chip.OnChipLanded -= HandleChipLanded;
 
         totalChipsToFallCount--;
-        Debug.Log($"Chip {chip.Cell} handled: totalChipsToFallCount = {totalChipsToFallCount}");
+        //Debug.Log($"Chip {chip.Cell} handled: totalChipsToFallCount = {totalChipsToFallCount}");
 
         if (totalChipsToFallCount < 0)
         {
@@ -159,21 +181,6 @@ public class CascadeHandler : SettingsSubscriber, IInitializer
         if (totalChipsToFallCount == 0)
             HandleCascadeComplete();
     }
-
-    //public void HandleChipLanded()
-    //{
-    //    totalChipsToFallCount--;
-    //    Debug.Log($"totalChipsToFallCount = {totalChipsToFallCount}");
-
-    //    if (totalChipsToFallCount < 0)
-    //    {
-    //        Debug.LogError($"CascadeHandler: totalChipsToFallCount (= {totalChipsToFallCount}) shouldn't be negative!");
-    //        return;
-    //    }
-
-    //    if (totalChipsToFallCount == 0)
-    //        HandleCascadeComplete();
-    //}
 
     void HandleCascadeComplete()
     {

@@ -32,6 +32,11 @@ public class MainMenuAnimator : SettingsSubscriber
 
     void Start()
     {
+        //StartAnimation();
+    }
+
+    void StartAnimation()
+    {
         SetEndStates();
         SetStartPositions();
 

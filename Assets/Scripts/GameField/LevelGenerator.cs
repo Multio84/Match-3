@@ -1,11 +1,13 @@
+using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 
 public class LevelGenerator : MonoBehaviour, IInitializer
 {
     GameSettings settings;
-    GameField gf;
+    GameField gameField;
     SwapHandler swapHandler;
 
     [SerializeField] GameObject cellPrefab;
@@ -22,7 +24,7 @@ public class LevelGenerator : MonoBehaviour, IInitializer
     public void Setup(GameSettings gs, GameField gf, SwapHandler sh)
     {
         settings = gs;
-        this.gf = gf;
+        gameField = gf;
         swapHandler = sh;
     }
 
@@ -30,7 +32,7 @@ public class LevelGenerator : MonoBehaviour, IInitializer
     {
         fieldWidth = settings.fieldWidth;
         fieldHeight = settings.fieldHeight;
-        boardHeight = gf.boardHeight;
+        boardHeight = gameField.boardHeight;
     }
 
     public void GenerateLevel()
@@ -52,7 +54,7 @@ public class LevelGenerator : MonoBehaviour, IInitializer
 
     void SpawnFieldCell(Vector2Int cell)
     {
-        GameObject cellObj = Instantiate(cellPrefab, gf.GetCellWorldPos(cell), Quaternion.identity);
+        GameObject cellObj = Instantiate(cellPrefab, gameField.GetCellWorldPos(cell), Quaternion.identity);
         cellObj.transform.SetParent(cellsRoot.transform);
         cellObj.name = "Cell_" + cell.x.ToString() + "_" + cell.y.ToString();
     }
@@ -66,7 +68,7 @@ public class LevelGenerator : MonoBehaviour, IInitializer
             {
                 Chip chip = SpawnChip(new Vector2Int(x, y));
                 chip.IsVisible = true;
-                gf.SetChipByItsPos(chip);
+                gameField.SetChipByItsPos(chip);
             }
         }
 
@@ -74,33 +76,44 @@ public class LevelGenerator : MonoBehaviour, IInitializer
     }
 
     // new chips are spawned over gamefield, on the top half of the board
-    public void SpawnNewChips()
+    public void SpawnNewChips(List<Chip> deletedChips)
     {
-        gf.SetEmptyColumnsSizes();
-        int[] emptyColumnsSizes = gf.newChipsColumnsSizes;
+        int[] emptyCellsPerColumn = gameField.GetEmptyCellsPerColumn(deletedChips);
         for (int x = 0; x < fieldWidth; x++)
         {
-            if (emptyColumnsSizes[x] <= 0) continue;
+            if (emptyCellsPerColumn[x] <= 0) continue;
 
-            for (int y = fieldHeight; y < fieldHeight + emptyColumnsSizes[x]; y++)
+            int minSpawnY = gameField.GetMinYOverFieldWithoutChip(x);
+
+            for (int y = minSpawnY; y < minSpawnY + emptyCellsPerColumn[x]; y++)
             {
+                if (y >= boardHeight)
+                {
+                    Debug.LogError("WRONG CELL!");
+                }
                 Chip chip = SpawnChip(new Vector2Int(x, y));
                 chip.SetBlocked();
                 chip.IsVisible = true;
-                gf.SetChipByItsPos(chip);
+                gameField.SetChipByItsPos(chip);
             }
         }
     }
 
     public Chip SpawnChip(Vector2Int cellPos)
     {
+        if (gameField.GetBoardChip(cellPos) is not null)
+        {
+            Debug.LogError("Attempt to spawn chip in the cell with another chip!");
+            return null;
+        }
+
         int randomIndex = UnityEngine.Random.Range(0, chipsPrefabs.Length);
-        GameObject chipGO = Instantiate(chipsPrefabs[randomIndex], gf.GetCellWorldPos(cellPos), Quaternion.identity);
+        GameObject chipGO = Instantiate(chipsPrefabs[randomIndex], gameField.GetCellWorldPos(cellPos), Quaternion.identity);
         chipGO.transform.SetParent(transform);
 
         Chip chip = chipGO.GetComponent<Chip>();
         //chip.name = "Chip_" + cellPos;
-        chip.Init(settings, gf, swapHandler, cellPos);
+        chip.Init(settings, gameField, swapHandler, cellPos);
 
         return chip;
     }

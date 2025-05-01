@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b2f21a0cbbf2a6645a66900411aaa61f, type: 3}
   m_Name: GameSettings
   m_EditorClassIdentifier: 
-  fieldWidth: 7
-  fieldHeight: 11
+  fieldWidth: 5
+  fieldHeight: 5
   cellSize: 140
   chipFallDuration: 5
   chipFallStartSpeed: 500
@@ -24,3 +24,5 @@ MonoBehaviour:
   reverseSwapDelay: 0.15
   minMatchSize: 3
   maxMatchSize: 5
+  mainButtonsAnimDelay: 0.2
+  mainButtonsAnimDuration: 1

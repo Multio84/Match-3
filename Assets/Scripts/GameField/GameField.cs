@@ -55,8 +55,8 @@ public class GameField : MonoBehaviour, IInitializer
     int height;
     public int boardHeight { get; private set; }
     Chip[,] board;
-    public IEnumerable<Chip> BoardEnumerable => board.Cast<Chip>(); // property for iterating chips outside GameField
-    public int[] newChipsColumnsSizes;
+    public IEnumerable<Chip> BoardEnumerable => board.Cast<Chip>(); // property for iterating chipsToDelete outside GameField
+    int[] emptyCellsPerColumn;
 
 
     public void Setup(GameSettings gs)
@@ -69,12 +69,11 @@ public class GameField : MonoBehaviour, IInitializer
         cellSize = settings.cellSize;
         width = settings.fieldWidth;
         height = settings.fieldHeight;
-        boardHeight = height * 2;
+        boardHeight = height * 3;
 
         grid = GetComponent<Grid>();
         grid.cellSize = new Vector3(cellSize, cellSize, 0);
-        board = new Chip[width, boardHeight];    // board is 2 times higher than field to store new chips for future collapsing
-        newChipsColumnsSizes = new int[width];
+        board = new Chip[width, boardHeight];    // board is 2 times higher than field to store new chipsToDelete for future collapsing
 
         SetGameFieldPos();
     }
@@ -139,106 +138,113 @@ public class GameField : MonoBehaviour, IInitializer
         Vector2Int cell1 = operation.draggedChip.Cell;
         Vector2Int cell2 = operation.swappedChip.Cell;
 
-        // set chips swapped cellPoses
+        // set chipsToDelete swapped cellPoses
         SetChipByNewPos(operation.swappedChip, cell1);
         SetChipByNewPos(operation.draggedChip, cell2);
     }
 
-    // find the max Y cellPos of all chips to set a search limit of collapse cycle
-    public int GetHighestCellWithChip()
+    // find the min Y on board, without chips to set a search limit of cascade cycle
+    public int GetLowestEmptyRow()
     {
-        if (newChipsColumnsSizes is null || newChipsColumnsSizes.Length == 0)
+        for (int y = height; y < boardHeight; y++)
         {
-            Debug.LogError("Attempt to process NewChipsColumnsSizes: Invalid");
-            return 0;
-        }
-
-        int highestCell = newChipsColumnsSizes[0];
-        for (int i = 1; i < newChipsColumnsSizes.Length; i++)
-        {
-            if (newChipsColumnsSizes[i] > highestCell)
+            bool isRowEmpty = true;
+            for (int x = 0; x < width; x++)
             {
-                highestCell = newChipsColumnsSizes[i];
-            }
-        }
-
-        return height + highestCell;
-    }
-
-    public void SetEmptyColumnsSizes()
-    {
-        newChipsColumnsSizes = new int[width];
-        for (int x = 0; x < width; x++)
-        {
-            for (int y = 0; y < height; y++)
-            {
-                if (!IsEmptyCell(new Vector2Int(x, y)))
+                if (GetBoardChip(new Vector2Int(x, y)) is not null)
                 {
-                    newChipsColumnsSizes[x]++;
+                    isRowEmpty = false;
+                    break;
                 }
             }
+            if (isRowEmpty)
+                return y; 
         }
-    }
-
-    // collects all chips above the matched ones (that will cascade soon),
-    // to block them before this
-    public HashSet<Chip> GetChipsAboveMatched()
-    {
-        HashSet<Chip> aboveChips = new HashSet<Chip>();
-
-        for (int x = 0; x < width; x++)
-        {
-            bool bottomMatchedCellFound = false;
-            for (int y = 0; y < height; y++)
-            {
-                Chip currentChip = GetFieldChip(new Vector2Int(x, y));
-                if (currentChip is null) continue;
-
-                if (!bottomMatchedCellFound && currentChip.IsMatched)
-                {
-                    bottomMatchedCellFound = true;
-                }
-
-                if (bottomMatchedCellFound && !currentChip.IsMatched)
-                {
-                    aboveChips.Add(currentChip);
-                }
-            }
-        }
-
-        return aboveChips;
+        return -1;
     }
 
     public List<Chip> CollectChipsToDelete()
     {
-        List<Chip> chips = new List<Chip>();
+        List<Chip> chipsToDelete = new List<Chip>();
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
             {
                 Vector2Int cell = new Vector2Int(x, y);
-                if (IsEmptyCell(cell))
+                if (!IsEmptyFieldCell(cell))
                 {
                     Chip chip = GetFieldChip(cell);
                     if (chip.IsMatched)
-                        chips.Add(chip);
+                        chipsToDelete.Add(chip);
                 }
             }
         }
 
-        return chips;
+        return chipsToDelete;
     }
 
-    public bool IsEmptyCell(Vector2Int cell)
+    public int[] GetEmptyCellsPerColumn(List<Chip> deletedChips)
+    {
+        emptyCellsPerColumn = new int[width];
+        foreach (Chip chip in deletedChips)
+        {
+            if (!IsValidCell(chip.Cell))
+            {
+                Debug.LogWarning($"Invalid cell among deletecChips!");
+                continue;
+            }
+
+            if (IsEmptyFieldCell(chip.Cell))
+                emptyCellsPerColumn[chip.Cell.x]++;
+
+        }
+
+        return emptyCellsPerColumn;
+    }
+
+    // returns first empty cell's Y (in upward direction) in the X column
+    public int GetMinYOverFieldWithoutChip(int x)
+    {
+        int y = height;
+        do
+        {
+            if (GetBoardChip(new Vector2Int(x, y)) is null)
+                break;
+            y++;
+        }
+        while (y < boardHeight);
+
+        if (y >= boardHeight)
+            Debug.LogError("WRONG CELL!");
+
+        return y;
+    }
+
+    public bool HasEmptyCells()
+    {
+        for (int y = 0; y < height; y++)
+        { 
+            for (int x = 0; x < width; x++)
+            {
+                if (IsEmptyFieldCell(new Vector2Int(x, y)))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    public bool IsEmptyFieldCell(Vector2Int cell)
     {
         if (GetFieldChip(cell) is null)
         {
             //Debug.LogWarning($"Cell {cell} is null.");
-            return false;
+            return true;
         }
 
-        return true;
+        return false;
     }
+
     public bool DeleteChip(Vector2Int cell)
     {
         if (SetChip(cell, null))

@@ -25,8 +25,6 @@ public class SwapOperation
 
     public void Stop()
     {
-        //draggedChip.SetBlocked();
-        //swappedChip.SetBlocked();
         draggedChip.SetIdle();
         swappedChip.SetIdle();
     }

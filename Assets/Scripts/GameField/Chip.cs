@@ -29,7 +29,7 @@ public enum ChipState
 public abstract class Chip : MonoBehaviour, IPointerDownHandler, IDragHandler
 {
     protected GameSettings settings;
-    protected GameField gf;
+    protected GameField gameField;
     protected SwapHandler swapHandler;
     protected Camera renderCamera;
     protected SpriteRenderer sr;
@@ -74,7 +74,7 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IDragHandler
     public virtual void Init(GameSettings gs, GameField gf, SwapHandler sh, Vector2Int cellPos)
     {
         settings = gs;
-        this.gf = gf;
+        gameField = gf;
         swapHandler = sh;
 
         renderCamera = Camera.main;

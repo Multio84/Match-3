@@ -5,17 +5,17 @@ using UnityEngine;
 
 public class ChipDestroyer : MonoBehaviour
 {
-    GameField gf;
+    GameField gameField;
 
     public List<Chip> chipsToDelete;
     int chipsToDeleteCount;  // number of chips to be deleted in current iteration
 
-    public event Action OnMatchesCleared;
+    public event Action<List<Chip>> OnMatchesCleared;
 
 
     public void Setup(GameField gf)
     {
-        this.gf = gf;
+        gameField = gf;
     }
 
     public void ClearMatches()
@@ -35,7 +35,7 @@ public class ChipDestroyer : MonoBehaviour
 
     void HandleChipDeath(Chip chip)
     {
-        if (!gf.DeleteChip(chip.Cell))
+        if (!gameField.DeleteChip(chip.Cell))
         {
             Debug.Log("HandleChipDeath: chip wasn't deleted.");
             return;
@@ -70,6 +70,6 @@ public class ChipDestroyer : MonoBehaviour
 
     void HandleMatchesCleared()
     {
-        OnMatchesCleared?.Invoke();
+        OnMatchesCleared?.Invoke(chipsToDelete);
     }
 }
