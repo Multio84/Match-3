@@ -47,19 +47,21 @@ public class CascadeHandler : SettingsSubscriber, IInitializer
 
     public void StartCascade()
     {
-        lowestEmptyRow = gameField.GetLowestEmptyRow();
-        if (lowestEmptyRow < 0)
-            Debug.LogError("Cascade: lowest empty row is over board height.");
-        CollectFallingQueue();
-        CountChipsToFall();
+        //lowestEmptyRow = gameField.GetLowestEmptyRow();
+        //if (lowestEmptyRow < 0)
+        //    Debug.LogError("Cascade: lowest empty row is over board height.");
+        //CollectFallingQueue();
+        //CountChipsToFall();
         CascadeChips();
     }
 
     public async void CascadeChips()
     {
-        //lowestEmptyRow = gameField.GetLowestEmptyRow();
-        //CollectFallingQueue();
-        //CountChipsToFall();
+        lowestEmptyRow = gameField.GetLowestEmptyRow();
+        if (lowestEmptyRow < 0)
+            Debug.LogError("Cascade: lowest empty row is over board height.");
+        CollectFallingQueue();
+        CountChipsToFall();
 
         if (chipsToFall.Count == 0)
             Debug.LogWarning("Chips to fall: 0");
