@@ -78,16 +78,33 @@ public class GameField : MonoBehaviour, IInitializer
     }
 
     // game field pivot is in left bottom. This will position field in screen center, depending on the field size
+    //void SetGameFieldPos()
+    //{
+    //    var startGameFieldPos = Vector3.zero;//transform.position;
+
+    //    Vector3 newPos = new Vector3(
+    //        startGameFieldPos.x - cellSize * width / 2 + cellSize / 2,
+    //        startGameFieldPos.y - cellSize * height / 2 + cellSize / 2,
+    //        0
+    //    );
+
+    //    transform.position = newPos;
+    //}
+
+    // game field pivot is in left bottom. This will position field in screen center, depending on the field size
     void SetGameFieldPos()
     {
-        var startGameFieldPos = Vector3.zero;//transform.position;
-        Vector3 newPos = new Vector3(
-            startGameFieldPos.x - cellSize * width / 2,// + cellSize / 2,
-            startGameFieldPos.y - cellSize * height / 2,// + cellSize / 2,
-            0
-        );
+        var canvas = GetComponentInParent<Canvas>();
+        float k = canvas.scaleFactor;                // то, во сколько CanvasSca≠ler
+                                                     // увеличивает/уменьшает UI
+        float s = cellSize * k;                      // реальный размер клетки
 
-        transform.position = newPos;
+        Vector3 newPos = new Vector3(
+            -s * width * 0.5f + s * 0.5f,
+            -s * height * 0.5f + s * 0.5f,
+            0);
+
+        transform.localPosition = newPos;            // дл€ UI-объектов Ц local
     }
 
     public bool SetChipByItsPos(Chip chip)
