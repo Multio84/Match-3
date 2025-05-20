@@ -1,4 +1,3 @@
-using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -76,9 +75,9 @@ public class LevelGenerator : MonoBehaviour, IInitializer
     }
 
     // new chips are spawned over gamefield, on the top half of the board
-    public void SpawnNewChips(List<Chip> deletedChips)
+    public void SpawnNewChips(List<Vector2Int> clearedCells)
     {
-        int[] emptyCellsPerColumn = gameField.GetEmptyCellsPerColumn(deletedChips);
+        int[] emptyCellsPerColumn = gameField.GetEmptyCellsPerColumn(clearedCells);
         for (int x = 0; x < fieldWidth; x++)
         {
             if (emptyCellsPerColumn[x] <= 0) continue;
@@ -91,8 +90,9 @@ public class LevelGenerator : MonoBehaviour, IInitializer
                 {
                     Debug.LogError("WRONG CELL!");
                 }
+
                 Chip chip = SpawnChip(new Vector2Int(x, y));
-                chip.SetBlocked();
+                chip.SetState(ChipState.Blocked);
                 chip.IsVisible = true;
                 gameField.SetChipByItsPos(chip);
             }

@@ -17,7 +17,7 @@ public class CascadeHandler : SettingsSubscriber, IInitializer
     public int totalChipsToFallCount = 0;
     Queue<Dictionary<Vector2Int, Chip>> chipsToFall = new Queue<Dictionary<Vector2Int, Chip>>();
 
-    public event Action OnCascadeCompleted;
+    public event Action OnCascadeComplete;
 
 
     public void Setup(GameSettings settings, GameField gf)
@@ -37,25 +37,20 @@ public class CascadeHandler : SettingsSubscriber, IInitializer
         fieldWidth = Settings.fieldWidth;
     }
 
-    public void BlockChipsToFall(HashSet<Chip> chipsToFall)
-    {
-        foreach (Chip chip in chipsToFall)
-        {
-            chip.SetState(ChipState.Blocked);
-        }
-    }
+    //public void BlockChipsToFall(HashSet<Chip> chipsToFall)
+    //{
+    //    foreach (Chip chip in chipsToFall)
+    //    {
+    //        chip.SetState(ChipState.Blocked);
+    //    }
+    //}
 
     public void StartCascade()
     {
-        //lowestEmptyRow = gameField.GetLowestEmptyRow();
-        //if (lowestEmptyRow < 0)
-        //    Debug.LogError("Cascade: lowest empty row is over board height.");
-        //CollectFallingQueue();
-        //CountChipsToFall();
-        CascadeChips();
+        RunCascade();
     }
 
-    public async void CascadeChips()
+    void RunCascade()
     {
         lowestEmptyRow = gameField.GetLowestEmptyRow();
         if (lowestEmptyRow < 0)
@@ -63,9 +58,14 @@ public class CascadeHandler : SettingsSubscriber, IInitializer
         CollectFallingQueue();
         CountChipsToFall();
 
-        if (chipsToFall.Count == 0)
+        if (chipsToFall.Count <= 0)
             Debug.LogWarning("Chips to fall: 0");
+        else
+            CascadeChips();
+    }
 
+    public async void CascadeChips()
+    {
         while (chipsToFall.Count > 0)
         {
             var chipsRow = chipsToFall.Dequeue();
@@ -98,7 +98,7 @@ public class CascadeHandler : SettingsSubscriber, IInitializer
                 break;
             }
 
-            gameField.SyncFallingChipsWithBoard(chipsRowToFall);
+            gameField.DropChipsToEmptyCells(chipsRowToFall);
             chipsToFall.Enqueue(chipsRowToFall);
             
             i++;
@@ -128,8 +128,8 @@ public class CascadeHandler : SettingsSubscriber, IInitializer
                 {
                     if (bottomCell.HasValue)
                     {
-                        if (!currentChip.IsIdle() && !currentChip.IsBlocked())
-                            break;  // swapping chips should not cascade, so it won't be written as a chip to fall at all
+                        if (!currentChip.IsIdle() && !currentChip.HasState(ChipState.Blocked))
+                            break;  // skip all chips, that shouldn't fall, and all above them
 
                         if (chipsRow.TryAdd(bottomCell.Value, currentChip))
                         {
@@ -184,8 +184,15 @@ public class CascadeHandler : SettingsSubscriber, IInitializer
             HandleCascadeComplete();
     }
 
+    //void HandleCascadeComplete()
+    //{
+    //    OnCascadeComplete?.Invoke();
+    //}
+
     void HandleCascadeComplete()
     {
-        OnCascadeCompleted?.Invoke();
+        //isCascadeRunning = false;
+        //TryRunNextCascade();
+        OnCascadeComplete?.Invoke();
     }
 }

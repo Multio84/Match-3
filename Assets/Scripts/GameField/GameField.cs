@@ -55,7 +55,6 @@ public class GameField : MonoBehaviour, IInitializer
     int height;
     public int boardHeight { get; private set; }
     Chip[,] board;
-    public IEnumerable<Chip> BoardEnumerable => board.Cast<Chip>(); // property for iterating chipsToDelete outside GameField
     int[] emptyCellsPerColumn;
 
 
@@ -69,11 +68,11 @@ public class GameField : MonoBehaviour, IInitializer
         cellSize = settings.cellSize;
         width = settings.fieldWidth;
         height = settings.fieldHeight;
-        boardHeight = height * 3;
+        boardHeight = height * 10;
 
         grid = GetComponent<Grid>();
         grid.cellSize = new Vector3(cellSize, cellSize, 0);
-        board = new Chip[width, boardHeight];    // board is 2 times higher than field to store new chipsToDelete for future collapsing
+        board = new Chip[width, boardHeight];    // board is 2 times higher than field to store new matchedChips for future collapsing
 
         SetGameFieldPos();
     }
@@ -81,12 +80,13 @@ public class GameField : MonoBehaviour, IInitializer
     // game field pivot is in left bottom. This will position field in screen center, depending on the field size
     void SetGameFieldPos()
     {
-        var startGameFieldPos = transform.position;
+        var startGameFieldPos = Vector3.zero;//transform.position;
         Vector3 newPos = new Vector3(
-            (startGameFieldPos.x - cellSize * width) / 2 + cellSize / 2,
-            (startGameFieldPos.y - cellSize * height) / 2 + cellSize / 2,
+            startGameFieldPos.x - cellSize * width / 2,// + cellSize / 2,
+            startGameFieldPos.y - cellSize * height / 2,// + cellSize / 2,
             0
         );
+
         transform.position = newPos;
     }
 
@@ -120,7 +120,7 @@ public class GameField : MonoBehaviour, IInitializer
     }
 
     // changes currentChip's position in array: moves it from start currentChip's place to the cell
-    public void SyncFallingChipsWithBoard(Dictionary<Vector2Int, Chip> chipsToFall)
+    public void DropChipsToEmptyCells(Dictionary<Vector2Int, Chip> chipsToFall)
     {
         foreach (var entry in chipsToFall)
         {
@@ -138,7 +138,7 @@ public class GameField : MonoBehaviour, IInitializer
         Vector2Int cell1 = operation.draggedChip.Cell;
         Vector2Int cell2 = operation.swappedChip.Cell;
 
-        // set chipsToDelete swapped cellPoses
+        // set matchedChips swapped cellPoses
         SetChipByNewPos(operation.swappedChip, cell1);
         SetChipByNewPos(operation.draggedChip, cell2);
     }
@@ -163,9 +163,9 @@ public class GameField : MonoBehaviour, IInitializer
         return -1;
     }
 
-    public List<Chip> CollectChipsToDelete()
+    public List<Chip> CollectMatchedChips()
     {
-        List<Chip> chipsToDelete = new List<Chip>();
+        List<Chip> matchedChips = new List<Chip>();
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
@@ -175,28 +175,30 @@ public class GameField : MonoBehaviour, IInitializer
                 {
                     Chip chip = GetFieldChip(cell);
                     if (chip.IsMatched)
-                        chipsToDelete.Add(chip);
+                    {
+                        chip.IsMatched = false;
+                        matchedChips.Add(chip);
+                    }
                 }
             }
         }
 
-        return chipsToDelete;
+        return matchedChips;
     }
 
-    public int[] GetEmptyCellsPerColumn(List<Chip> deletedChips)
+
+    public int[] GetEmptyCellsPerColumn(List<Vector2Int> clearedCells)
     {
         emptyCellsPerColumn = new int[width];
-        foreach (Chip chip in deletedChips)
+        foreach (Vector2Int cell in clearedCells)
         {
-            if (!IsValidCell(chip.Cell))
+            if (!IsCellInBoard(cell))
             {
-                Debug.LogWarning($"Invalid cell among deletecChips!");
+                Debug.LogWarning($"Cell {cell} among clearedCells is out of board!");
                 continue;
             }
 
-            if (IsEmptyFieldCell(chip.Cell))
-                emptyCellsPerColumn[chip.Cell.x]++;
-
+            emptyCellsPerColumn[cell.x]++;
         }
 
         return emptyCellsPerColumn;
@@ -213,9 +215,6 @@ public class GameField : MonoBehaviour, IInitializer
             y++;
         }
         while (y < boardHeight);
-
-        if (y >= boardHeight)
-            Debug.LogError("WRONG CELL!");
 
         return y;
     }

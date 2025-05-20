@@ -28,20 +28,21 @@ public class SwapHandler : SettingsSubscriber
         reverseSwapDelay = Settings.reverseSwapDelay;
     }
 
-    public void Swap(Chip chip, Vector2Int direction, bool isReverse)
+    public bool Swap(Chip chip, Vector2Int direction, bool isReverse)
     {
         SwapOperation operation = GetSwapOperation(chip, direction, isReverse);
         if (operation is null)
         {
             Debug.Log("SwapOperation is null: Swap declined.");
-            return;
+            return false;
         }
         StartCoroutine(AnimateSwap(operation));
+        return true;
     }
 
     SwapOperation GetSwapOperation(Chip chip, Vector2Int direction, bool isReverse)
     {
-        Vector2Int targetCell = chip.Cell + direction;  // find adjacent cell to swap with chip in it
+        Vector2Int targetCell = chip.Cell + direction;  // adjacent cell to swap with chip in it
 
         if (!gameField.IsCellInField(targetCell)) return null;
 
@@ -87,7 +88,10 @@ public class SwapHandler : SettingsSubscriber
         operation.draggedChip.transform.position = chip2Pos;
         operation.swappedChip.transform.position = chip1Pos;
 
-        yield return new WaitForSeconds(reverseSwapDelay);
+        if (!operation.isReverse)
+        {
+            yield return new WaitForSeconds(reverseSwapDelay);
+        }
 
         HandleSwap(operation);
     }
@@ -114,7 +118,11 @@ public class SwapHandler : SettingsSubscriber
         else
         {
             // reverse swap: previously swapped chip becomes the "dragged" one
-            Swap(operation.swappedChip, operation.direction, true);
+            if(!Swap(operation.swappedChip, operation.direction, true))
+            {
+                Debug.LogWarning("Reverse swap is impossible: " +
+                    "some of the swapping chips are not in swappable state!");
+            }
         }
     }
 }

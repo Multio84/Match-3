@@ -11,6 +11,7 @@ public class GameplayConductor : MonoBehaviour, IInitializer
     CascadeHandler cascadeHandler;
     ChipDestroyer chipDestroyer;
 
+    //bool cascadeIsProcessing = false;
 
     public void Setup(
         GameField gf,
@@ -33,7 +34,7 @@ public class GameplayConductor : MonoBehaviour, IInitializer
     {
         levelGenerator.OnLevelGenerated += OnLevelGenerated;
         chipDestroyer.OnMatchesCleared += OnMatchesCleared;
-        cascadeHandler.OnCascadeCompleted += OnCascadeCompleted;
+        cascadeHandler.OnCascadeComplete += OnCascadeComplete;
         swapHandler.OnSwapComplete += OnSwapComplete;
     }
 
@@ -41,7 +42,7 @@ public class GameplayConductor : MonoBehaviour, IInitializer
     {
         levelGenerator.OnLevelGenerated -= OnLevelGenerated;
         chipDestroyer.OnMatchesCleared -= OnMatchesCleared;
-        cascadeHandler.OnCascadeCompleted -= OnCascadeCompleted;
+        cascadeHandler.OnCascadeComplete -= OnCascadeComplete;
         swapHandler.OnSwapComplete -= OnSwapComplete;
     }
 
@@ -58,21 +59,23 @@ public class GameplayConductor : MonoBehaviour, IInitializer
             ClearMatches();
     }
 
-    void OnMatchesCleared(List<Chip> deletedChips)
+    void OnMatchesCleared(List<Vector2Int> clearedCells)
     {
         Debug.Log("Conductor: Matches Cleared.");
-        levelGenerator.SpawnNewChips(deletedChips);
-        cascadeHandler.StartCascade();//CascadeChips();
+        levelGenerator.SpawnNewChips(clearedCells);
+        Cascade();
     }
 
-    void OnCascadeCompleted()
+    void OnCascadeComplete()
     {
+        Debug.Log("Conductor: Cascade Completed.");
+
+        //cascadeIsProcessing = false;
         if (gameField.HasEmptyCells())
         {
-            cascadeHandler.StartCascade();
+            Cascade();
         }
 
-            Debug.Log("Conductor: Collapse Completed.");
         if (matchFinder.FindMatches(null))
             ClearMatches();
     }
@@ -90,7 +93,7 @@ public class GameplayConductor : MonoBehaviour, IInitializer
             if (gameField.HasEmptyCells())
             {
                 Debug.Log("Conductor: Swap unsuccessful and caused additional Cascade.");
-                cascadeHandler.StartCascade();//CascadeChips();
+                Cascade();
                 return;
             }
             Debug.Log("Conductor: Swap unsuccessful.");
@@ -100,7 +103,13 @@ public class GameplayConductor : MonoBehaviour, IInitializer
 
     void ClearMatches()
     {
-        chipDestroyer.chipsToDelete = gameField.CollectChipsToDelete();
-        chipDestroyer.ClearMatches();
+        chipDestroyer.DestroyChips(gameField.CollectMatchedChips());
+    }
+
+        //while (cascadeIsProcessing) { }
+        //cascadeIsProcessing = true;
+    void Cascade()
+    {
+        cascadeHandler.StartCascade();
     }
 }

@@ -33,9 +33,24 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IDragHandler
     protected SwapHandler swapHandler;
     protected Camera renderCamera;
     protected SpriteRenderer sr;
+    public ChipDebugger debugger;
 
     public ChipColor Color;
-    public ChipState State;
+    private ChipState state;
+    private ChipState State
+    {
+        get => state;
+        set
+        {
+            state = value;
+            if (debugger is null)
+            {
+                Debug.LogError("Debugger is null.");
+                return;
+            }
+            debugger.UpdateState(value);
+        }
+    }
     protected Vector3 startDragPos;
     public Vector2Int Cell { get; set; }
 
@@ -89,6 +104,18 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IDragHandler
         gs.OnSettingsChanged += ApplyChipSettings;
 #endif
         ApplyChipSettings();
+
+        UseDebugger();
+    }
+
+    void UseDebugger()
+    {
+        if (debugger is null)
+        {
+            Debug.LogError("Debugger is null.");
+            return;
+        }
+        debugger.UpdateState(State);
     }
 
     void ApplyChipSettings()
@@ -102,10 +129,7 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IDragHandler
 
     public void OnPointerDown(PointerEventData eventData)
     {
-        //if (GameFieldProcessing.IsProcessing)
-        //    return;
-
-        if (IsIdle())
+        if (IsIdle() && !IsMatched)
             SetState(ChipState.Dragging);
         else
             return;
@@ -115,15 +139,16 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IDragHandler
         //Debug.Log("Pointer DOWN, State is " + State);
     }
 
-    //public void OnPointerUp(PointerEventData eventData)
-    //{
-    //    //if (!IsBlocked() &&
-    //    //    !HasState(ChipState.Swapping) &&
-    //    //    !HasState(ChipState.Swapped))
-    //    //    SetIdle();
+    public void OnPointerUp(PointerEventData eventData)
+    {
+        //if (!IsBlocked() &&
+        //    !HasState(ChipState.Dragging) &&
+        //    !HasState(ChipState.Swapping) &&
+        //    !HasState(ChipState.Swapped))
+        //    SetIdle();
 
-    //    Debug.Log("Pointer UP, State is " + State);
-    //}
+        //Debug.Log("Pointer UP, State is " + State);
+    }
 
     public void OnDrag(PointerEventData eventData)
     {
@@ -159,7 +184,12 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IDragHandler
                 }
             }
 
-            swapHandler.Swap(this, direction, false);
+            if(!swapHandler.Swap(this, direction, false))
+            {
+                Debug.LogWarning("Swap is impossible: " +
+                    "some of the swapping chips are not in swappable state!");
+                SetIdle();
+            }
             //HandleDrag(direction);
         }
     }
@@ -177,29 +207,10 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IDragHandler
         StartCoroutine(AnimateFall(targetPos));
     }
 
-    // Old fall animation, based on time
-    //IEnumerator AnimateFall(Vector3 targetPos)
-    // {
-    //     Vector3 startPos = transform.position;
-
-    //     float elapsedTime = 0;
-
-    //     while (elapsedTime < fallDuration)
-    //     {
-    //         float t = Mathf.Pow(elapsedTime / fallDuration, fallGravity);
-    //         transform.position = Vector3.Lerp(startPos, targetPos, t);
-    //         elapsedTime += Time.deltaTime;
-    //         yield return null;
-    //     }
-
-    //     transform.position = targetPos;
-
-    //     OnChipLanded?.Invoke();
-    //     OnChipLanded = null;
-    // }
-
     private IEnumerator AnimateFall(Vector3 targetPos)
     {
+        SetState(ChipState.Falling);
+
         float currentY = transform.position.y;
         float verticalVelocity = startFallSpeed;
 
@@ -279,11 +290,6 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IDragHandler
         return HasState(ChipState.Idle);
     }
 
-    public bool IsBlocked()
-    {
-        return HasState(ChipState.Blocked);
-    }
-
     public void SetState(ChipState newState)
     {
         if (State != newState)
@@ -295,12 +301,6 @@ public abstract class Chip : MonoBehaviour, IPointerDownHandler, IDragHandler
     public void SetIdle()
     {
         SetState(ChipState.Idle);
-    }
-
-    public void SetBlocked()
-    {
-
-        SetState(ChipState.Blocked);
     }
 
     Vector3 ScreenToWorldPos(Vector3 screenPosition)
